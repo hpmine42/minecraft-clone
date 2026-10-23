@@ -1,4 +1,4 @@
-// hud.test.mjs — Weltstatus, Zielhinweise, Screenshotmodus und Uhrformat.
+// hud.test.mjs — World status, target hints, screenshot mode, and clock formatting.
 import { HUD, formatWorldClock } from '../src/ui/hud.js';
 import { BLOCK } from '../src/world/blocks.js';
 import { Inventory } from '../src/player/inventory.js';
@@ -21,15 +21,15 @@ let passed = 0;
 let failed = 0;
 function ok(condition, message) {
   if (condition) passed++;
-  else { failed++; console.error(`FEHL: ${message}`); }
+  else { failed++; console.error(`FAIL: ${message}`); }
 }
 
 ok(formatWorldClock(0) === '06:00'
   && formatWorldClock(0.25) === '12:00'
   && formatWorldClock(0.5) === '18:00'
   && formatWorldClock(0.75) === '00:00',
-'Weltuhr stimmt mit Sonnenaufgang, Mittag, Sonnenuntergang und Mitternacht überein');
-ok(formatWorldClock(Number.NaN) === '--:--', 'Ungültige Zeitwerte erzeugen keine fehlerhafte Anzeige');
+'World clock matches sunrise, noon, sunset, and midnight');
+ok(formatWorldClock(Number.NaN) === '--:--', 'Invalid time values do not produce a broken display');
 
 const root = makeElement();
 const targetHint = makeElement();
@@ -53,24 +53,24 @@ const hud = new HUD({
 
 hud.setGameplayActive(true);
 hud.setTargetHint({ id: BLOCK.CHEST }, { gamemode: 'survival', hunger: 10, maxHunger: 20 }, false);
-ok(targetHint.textContent === 'Truhe · Rechtsklick öffnen' && targetHint.style.display === 'block',
-  'Zielhinweis zeigt die direkte Bedienung für Truhen an');
+ok(targetHint.textContent === 'Chest · Right-click to open' && targetHint.style.display === 'block',
+  'Target hint shows direct chest controls');
 hud.setTargetHint(null);
 ok(targetHint.textContent === '' && targetHint.style.display === 'none',
-  'Zielhinweis verschwindet, sobald kein Block anvisiert wird');
+  'Target hint disappears when no block is targeted');
 hud.setTargetHint({ id: BLOCK.STONE }, { gamemode: 'survival', hunger: 10, maxHunger: 20 }, true);
-ok(targetHint.textContent === 'Stein · ⛏ abbauen', 'Mobile Zielhinweise verwenden die Touch-Aktionssymbole');
+ok(targetHint.textContent === 'Stone · ⛏ mine', 'Mobile target hints use touch action icons');
 
-hud.setWorldStatus({ biome: 'Wald', timeOfDay: 0.25, weather: 'clear', y: 37.8 });
-ok(worldStatus.textContent === 'Wald · 12:00 · ☀ Klar · Y 37'
+hud.setWorldStatus({ biome: 'Forest', timeOfDay: 0.25, weather: 'clear', y: 37.8 });
+ok(worldStatus.textContent === 'Forest · 12:00 · ☀ Clear · Y 37'
   && worldStatus.style.display === 'block',
-'Weltstatus zeigt Biom, Weltzeit, Wetter und Höhe kompakt an');
+'World status compactly shows biome, world time, weather, and altitude');
 hud.setWorldStatus();
 ok(worldStatus.textContent === '' && worldStatus.style.display === 'none',
-'Weltstatus lässt sich beim Verlassen der Welt sicher ausblenden');
+'World status can be safely hidden when leaving the world');
 ok(hud.setHidden(true) === true && hud.hidden && root.style.display === 'none'
   && hud.setHidden(false) === false && root.style.display === '',
-'Screenshotmodus blendet das HUD aus und stellt es vollständig wieder her');
+'Screenshot mode hides the HUD and fully restores it');
 
-console.log(`\n${passed} bestanden, ${failed} fehlgeschlagen`);
+console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

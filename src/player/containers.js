@@ -1,4 +1,4 @@
-// containers.js — Validierung und Serialisierung der weltgebundenen Truhen-Inhalte.
+// containers.js — Validation and serialization of world-bound chest contents.
 import { BLOCKS } from '../world/blocks.js';
 
 export const CHEST_SLOT_COUNT = 27;

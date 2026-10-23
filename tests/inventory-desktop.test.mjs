@@ -1,4 +1,4 @@
-// inventory-desktop.test.mjs — Minecraft-typische Mausbedienung für Inventar-Slots.
+// inventory-desktop.test.mjs — Minecraft-style mouse controls for inventory slots.
 import { BLOCK } from '../src/world/blocks.js';
 import { Inventory } from '../src/player/inventory.js';
 import { Menus } from '../src/ui/menus.js';
@@ -7,7 +7,7 @@ let passed = 0;
 let failed = 0;
 function ok(condition, message) {
   if (condition) passed++;
-  else { failed++; console.error(`FEHL: ${message}`); }
+  else { failed++; console.error(`FAIL: ${message}`); }
 }
 
 function makeMenus() {
@@ -35,56 +35,56 @@ const menus = makeMenus();
 menus.inventory.setSlot(0, { id: BLOCK.DIRT, count: 12, dur: null });
 menus._slotClick('inv', 0, 0);
 ok(menus.inventory.getSlot(0) === null && menus.heldStack?.count === 12,
-  'Linksklick nimmt den gesamten Stapel an den Cursor');
+  'Left-click picks up the entire stack');
 menus._slotClick('inv', 1, 0);
 ok(menus.inventory.getSlot(1)?.count === 12 && menus.heldStack === null,
-  'Erneuter Linksklick legt den ganzen Stapel ab');
+  'A second left-click places the whole stack');
 
 const fullStackMenus = makeMenus();
 fullStackMenus.inventory.setSlot(0, { id: BLOCK.DIRT, count: 64, dur: null });
 fullStackMenus._slotClick('inv', 0, 0);
 ok(fullStackMenus.inventory.getSlot(0) === null && fullStackMenus.heldStack?.count === 64,
-  'Linksklick nimmt einen vollständigen 64er-Stapel auf');
+  'Left-click picks up a full stack of 64');
 fullStackMenus._slotClick('inv', 1, 0);
 ok(fullStackMenus.inventory.getSlot(1)?.count === 64 && fullStackMenus.heldStack === null,
-  'Ein vollständiger 64er-Stapel wird unverändert abgelegt');
+  'A full stack of 64 is placed unchanged');
 fullStackMenus.inventory.setSlot(2, { id: BLOCK.DIRT, count: 63, dur: null });
 fullStackMenus._slotClick('inv', 2, 2);
 ok(fullStackMenus.inventory.getSlot(2)?.count === 31 && fullStackMenus.heldStack?.count === 32,
-  'Rechtsklick halbiert 63 Items mit Aufrunden auf 32 Cursor-Items');
+  'Right-click splits 63 items, rounding up to 32 cursor items');
 
 menus.inventory.setSlot(2, { id: BLOCK.DIRT, count: 9, dur: null });
 menus._slotClick('inv', 2, 2);
 ok(menus.inventory.getSlot(2)?.count === 4 && menus.heldStack?.count === 5,
-  'Rechtsklick nimmt die aufgerundete Hälfte eines Stapels');
+  'Right-click picks up half of a stack, rounded up');
 menus._slotClick('inv', 3, 2);
 ok(menus.inventory.getSlot(3)?.count === 1 && menus.heldStack?.count === 4,
-  'Rechtsklick legt genau ein Item in einen leeren Slot');
+  'Right-click places exactly one item in an empty slot');
 
 menus.inventory.setSlot(4, { id: BLOCK.DIRT, count: 63, dur: null });
 menus.heldStack = { id: BLOCK.DIRT, count: 5, dur: null };
 menus._slotClick('inv', 4, 2);
 ok(menus.inventory.getSlot(4)?.count === 64 && menus.heldStack?.count === 4,
-  'Rechtsklick ergänzt einen passenden Stapel um genau ein Item');
+  'Right-click adds exactly one item to a matching stack');
 menus._slotClick('inv', 4, 0);
 ok(menus.inventory.getSlot(4)?.count === 64 && menus.heldStack?.count === 4,
-  'Voller Stapel nimmt keine weiteren Items an');
+  'A full stack accepts no additional items');
 
 menus.inventory.setSlot(5, { id: BLOCK.DIRT, count: 62, dur: null });
 menus.heldStack = { id: BLOCK.DIRT, count: 6, dur: null };
 menus._slotClick('inv', 5, 0);
 ok(menus.inventory.getSlot(5)?.count === 64 && menus.heldStack?.count === 4,
-  'Linksklick füllt einen passenden Stapel so weit wie möglich');
+  'Left-click fills a matching stack as much as possible');
 menus.inventory.setSlot(6, { id: BLOCK.STONE, count: 2, dur: null });
 menus.heldStack = { id: BLOCK.SAND, count: 3, dur: null };
 menus._slotClick('inv', 6, 0);
 ok(menus.inventory.getSlot(6)?.id === BLOCK.SAND && menus.heldStack?.id === BLOCK.STONE,
-  'Linksklick tauscht zwei unterschiedliche Stapel');
+  'Left-click swaps two different stacks');
 menus.inventory.setSlot(7, { id: BLOCK.STONE, count: 2, dur: null });
 menus.heldStack = { id: BLOCK.SAND, count: 3, dur: null };
 menus._slotClick('inv', 7, 2);
 ok(menus.inventory.getSlot(7)?.id === BLOCK.STONE && menus.heldStack?.id === BLOCK.SAND,
-  'Rechtsklick tauscht keine unterschiedlichen Stapel');
+  'Right-click does not swap different stacks');
 
 const rapidMenus = makeMenus();
 rapidMenus.inventory.setSlot(0, { id: BLOCK.DIRT, count: 64, dur: null });
@@ -96,9 +96,9 @@ for (let click = 0; click < 250; click++) {
 }
 const rapidTotal = rapidMenus.inventory.count(BLOCK.DIRT) + (rapidMenus.heldStack?.count || 0);
 ok(rapidCountsAlwaysValid && rapidTotal === 64,
-'Schnelle Links-/Rechtsklicks erzeugen weder Duplikate noch negative oder übergroße Stapel');
+'Rapid left/right clicks create no duplicates, negative counts, or oversized stacks');
 
-// Tatsächlicher Desktop-Mausablauf: Aufnehmen, Cursor verfolgen, am Ziel loslassen.
+// Actual desktop mouse sequence: pick up, track the cursor, and release over the target.
 menus.heldStack = null;
 menus.inventory.setSlot(14, { id: BLOCK.PLANKS, count: 8, dur: null });
 menus.slotAt.set(10, { kind: 'inv', index: 14 });
@@ -109,14 +109,14 @@ const mouseEvent = (button, x, y = 0) => ({
 });
 menus._startDesktopInventoryMouse(mouseEvent(0, 10), 'inv', 14);
 ok(menus.inventory.getSlot(14) === null && menus.heldStack?.count === 8,
-  'Maus-Aufnehmen hebt den Stapel sofort an');
+  'Mouse pickup lifts the stack immediately');
 menus._moveDesktopInventoryMouse(mouseEvent(0, 20));
-ok(menus.lastCursorPoint?.[0] === 20, 'Schwebender Stapel folgt der Mausbewegung');
+ok(menus.lastCursorPoint?.[0] === 20, 'Floating stack follows mouse movement');
 menus._endDesktopInventoryMouse(mouseEvent(0, 20));
 ok(menus.inventory.getSlot(15)?.count === 8 && menus.heldStack === null,
-  'Maus-Drag legt den ganzen Stapel am Loslass-Slot ab');
+  'Mouse drag places the whole stack in the release slot');
 
-// Rechtsziehen verteilt eins pro Slot; Linksziehen teilt den Stapel gleichmäßig.
+// Right-drag places one per slot; left-drag distributes the stack evenly.
 menus.heldStack = { id: BLOCK.DIRT, count: 7, dur: null };
 menus.slotAt.set(30, { kind: 'inv', index: 16 });
 menus.slotAt.set(40, { kind: 'inv', index: 17 });
@@ -127,7 +127,7 @@ menus._moveDesktopInventoryMouse(mouseEvent(2, 50));
 menus._endDesktopInventoryMouse(mouseEvent(2, 50));
 ok([16, 17, 18].every((index) => menus.inventory.getSlot(index)?.count === 1)
   && menus.heldStack?.count === 4,
-'Rechtsziehen legt genau ein Item pro berührtem Slot ab');
+'Right-drag places exactly one item in each slot crossed');
 
 menus.heldStack = { id: BLOCK.SAND, count: 10, dur: null };
 menus.slotAt.set(60, { kind: 'inv', index: 19 });
@@ -141,14 +141,14 @@ ok(menus.inventory.getSlot(19)?.count === 4
   && menus.inventory.getSlot(20)?.count === 3
   && menus.inventory.getSlot(21)?.count === 3
   && menus.heldStack === null,
-'Linksziehen verteilt den Stapel möglichst gleichmäßig auf alle Slots');
+'Left-drag distributes the stack as evenly as possible across all slots');
 
 const capacityMenus = makeMenus();
 capacityMenus.inventory.setSlot(0, { id: BLOCK.STONE, count: 1, dur: null });
 capacityMenus.inventory.setSlot(1, { id: BLOCK.DIRT, count: 60, dur: null });
 capacityMenus.inventory.setSlot(2, { id: BLOCK.DIRT, count: 64, dur: null });
 capacityMenus.heldStack = { id: BLOCK.DIRT, count: 64, dur: null };
-capacityMenus.slotAt.set(10, { kind: 'inv', index: 0 }); // Ungültiger Startslot: wird nicht gezählt.
+capacityMenus.slotAt.set(10, { kind: 'inv', index: 0 }); // Invalid starting slot: not counted.
 capacityMenus.slotAt.set(20, { kind: 'inv', index: 1 });
 capacityMenus.slotAt.set(30, { kind: 'inv', index: 2 });
 capacityMenus._startDesktopInventoryMouse(mouseEvent(0, 10), 'inv', 0);
@@ -156,37 +156,37 @@ capacityMenus._moveDesktopInventoryMouse(mouseEvent(0, 20));
 capacityMenus._endDesktopInventoryMouse(mouseEvent(0, 20));
 ok(capacityMenus.inventory.getSlot(1)?.count === 64 && capacityMenus.heldStack?.count === 60
   && capacityMenus.inventory.getSlot(0)?.id === BLOCK.STONE,
-'Ziehen auf einen Stapel mit 60 Items ergänzt nur die vier freien Plätze');
+'Dragging onto a stack of 60 adds only the four free spaces');
 capacityMenus._startDesktopInventoryMouse(mouseEvent(0, 10), 'inv', 0);
 capacityMenus._moveDesktopInventoryMouse(mouseEvent(0, 30));
 capacityMenus._endDesktopInventoryMouse(mouseEvent(0, 30));
 ok(capacityMenus.inventory.getSlot(2)?.count === 64 && capacityMenus.heldStack?.count === 60,
-'Ziehen auf einen vollen Stapel lässt den Cursorstapel unverändert');
+'Dragging onto a full stack leaves the cursor stack unchanged');
 capacityMenus._startDesktopInventoryMouse(mouseEvent(0, 20), 'inv', 1);
 capacityMenus._endDesktopInventoryMouse(mouseEvent(0, 200));
 ok(capacityMenus.heldStack?.count === 60,
-'Loslassen außerhalb des Inventars verliert keinen Cursorstapel');
+'Releasing outside the inventory does not lose the cursor stack');
 
 const furnaceState = { slots: [null, null, { id: BLOCK.IRON_INGOT, count: 9, dur: null }] };
 menus.containerSession = { type: 'furnace', state: furnaceState, slots: furnaceState.slots };
 menus.heldStack = null;
 menus._slotClick('container', 2, 2);
 ok(furnaceState.slots[2]?.count === 4 && menus.heldStack?.count === 5,
-'Rechtsklick nimmt die aufgerundete Hälfte aus dem Ofen-Ergebnis');
+'Right-click takes half of the furnace result, rounded up');
 menus.heldStack = { id: BLOCK.IRON_ORE, count: 4, dur: null };
 menus._slotClick('container', 0, 2);
 ok(furnaceState.slots[0]?.count === 1 && menus.heldStack?.count === 3,
-'Rechtsklick legt genau ein passendes Rohstoff-Item in den Ofen');
+'Right-click places exactly one matching ingredient in the furnace');
 
-// Shift-Klick verschiebt komplette Stapel zwischen Hauptinventar und Hotbar.
+// Shift-click moves complete stacks between the main inventory and hotbar.
 const shiftMenus = makeMenus();
 shiftMenus.inventory.setSlot(12, { id: BLOCK.DIRT, count: 17, dur: null });
 shiftMenus._shiftClick('inv', 12);
 ok(shiftMenus.inventory.getSlot(12) === null && shiftMenus.inventory.getSlot(0)?.count === 17,
-  'Shift-Klick verschiebt einen Stapel aus dem Hauptinventar in die Hotbar');
+  'Shift-click moves a stack from the main inventory to the hotbar');
 shiftMenus._shiftClick('inv', 0);
 ok(shiftMenus.inventory.getSlot(0) === null && shiftMenus.inventory.getSlot(9)?.count === 17,
-  'Shift-Klick verschiebt einen Hotbar-Stapel zurück ins Hauptinventar');
+  'Shift-click moves a hotbar stack back to the main inventory');
 
 const priorityMenus = makeMenus();
 priorityMenus.inventory.setSlot(12, { id: BLOCK.DIRT, count: 17, dur: null });
@@ -195,7 +195,7 @@ priorityMenus._shiftClick('inv', 12);
 ok(priorityMenus.inventory.getSlot(1)?.count === 64
   && priorityMenus.inventory.getSlot(0)?.count === 13
   && priorityMenus.inventory.getSlot(12) === null,
-'Shift-Klick füllt zuerst kompatible Stapel und belegt danach leere Slots');
+'Shift-click fills compatible stacks first, then uses empty slots');
 
 const equipmentMenus = makeMenus();
 equipmentMenus.inventory.setSlot(10, { id: BLOCK.TORCH, count: 4, dur: null });
@@ -203,15 +203,15 @@ equipmentMenus._shiftClick('inv', 10);
 ok(equipmentMenus.inventory.getEquipment('offhand')?.id === BLOCK.TORCH
   && equipmentMenus.inventory.getEquipment('offhand')?.count === 4
   && equipmentMenus.inventory.getSlot(10) === null,
-'Shift-Klick legt ein laut Itemdefinition erlaubtes Item in die Nebenhand');
+'Shift-click places an item allowed by its definition in the off-hand');
 equipmentMenus.heldStack = { id: BLOCK.BREAD, count: 1, dur: null };
 equipmentMenus._slotClick('equipment', 4, 0);
 ok(equipmentMenus.inventory.getEquipment('offhand')?.id === BLOCK.TORCH
   && equipmentMenus.inventory.getEquipment('offhand')?.count === 4
   && equipmentMenus.heldStack?.id === BLOCK.BREAD,
-'Undefinierte Items lassen sich nicht in die belegte Nebenhand ablegen');
+'Undefined items cannot be placed in the occupied off-hand');
 
-// Shift-Klick auf das Ergebnis stellt wiederholt Rezepte her, solange Platz vorhanden ist.
+// Shift-clicking the result repeatedly crafts recipes while space is available.
 shiftMenus.craftGrid = [
   { id: BLOCK.PLANKS, count: 2, dur: null }, null,
   { id: BLOCK.PLANKS, count: 2, dur: null }, null,
@@ -219,21 +219,21 @@ shiftMenus.craftGrid = [
 shiftMenus._shiftClick('result', 0);
 ok(shiftMenus.inventory.count(BLOCK.STICK) === 8
   && shiftMenus.craftGrid.every((stack) => !stack),
-'Crafting-Ergebnis per Shift-Klick stellt alle möglichen Rezepte her und lagert sie ein');
+'Shift-clicking the crafting result crafts every possible recipe and stores the items');
 
-// Rechtsklick auf einen Crafting-Ausgang nimmt eines und hält den Rest sicher bereit.
+// Right-clicking a crafting output takes one and safely reserves the rest.
 const rightCraft = makeMenus();
 rightCraft.craftGrid = [{ id: BLOCK.LOG, count: 1, dur: null }, null, null, null];
 rightCraft._takeCraftResult(2);
 ok(rightCraft.heldStack?.id === BLOCK.PLANKS && rightCraft.heldStack.count === 1
   && rightCraft.craftRemainder?.count === 3 && rightCraft.craftGrid.every((stack) => !stack),
-'Rechtsklick auf ein 4er-Rezept nimmt eins und bewahrt die übrigen drei Ergebnisse');
+'Right-clicking a four-item recipe takes one and preserves the other three results');
 rightCraft._takeCraftResult(0);
 ok(rightCraft.heldStack?.count === 4 && rightCraft.craftRemainder === null,
-'Übrige Crafting-Ergebnisse lassen sich ohne erneuten Zutatenverbrauch einsammeln');
+'Remaining crafting results can be collected without consuming ingredients again');
 
-// Schließen gibt Cursor- und Craftingstapel zurück; bei voller Tasche wird genau
-// der nicht einlagerbare Rest als einzelner Item-Drop weitergegeben.
+// Closing returns cursor and crafting stacks; with a full inventory, exactly
+// the unstashable remainder is passed on as a single item drop.
 const closeMenus = makeMenus();
 const cursorDrops = [];
 closeMenus.cb.onDropStack = (id, count, stack) => {
@@ -246,7 +246,7 @@ closeMenus.closeActiveInventory();
 ok(closeMenus.inventory.count(BLOCK.SAND) === 5 && closeMenus.inventory.count(BLOCK.DIRT) === 0
   && cursorDrops.length === 1 && cursorDrops[0].id === BLOCK.DIRT && cursorDrops[0].count === 3
   && closeMenus.craftGrid.every((stack) => !stack) && closeMenus.heldStack === null,
-'Beim Schließen gehen Craftingzutaten zurück, der Cursorstapel wird in die Welt geworfen');
+'Closing returns crafting ingredients and drops the cursor stack into the world');
 const fullMenus = makeMenus();
 const overflowDrops = [];
 fullMenus.cb.onDropStack = (id, count) => { overflowDrops.push({ id, count }); return true; };
@@ -256,7 +256,7 @@ for (let index = 0; index < fullMenus.inventory.slots.length; index++) {
 fullMenus.heldStack = { id: BLOCK.SAND, count: 2, dur: null };
 fullMenus.closeActiveInventory();
 ok(overflowDrops.length === 1 && overflowDrops[0].id === BLOCK.SAND && overflowDrops[0].count === 2,
-'Volles Inventar gibt den Cursorstapel genau einmal als Welt-Drop zurück');
+'A full inventory returns the cursor stack exactly once as a world drop');
 const noDropSystem = makeMenus();
 for (let index = 0; index < noDropSystem.inventory.slots.length; index++) {
   noDropSystem.inventory.setSlot(index, { id: BLOCK.DIRT, count: 64, dur: null });
@@ -264,7 +264,7 @@ for (let index = 0; index < noDropSystem.inventory.slots.length; index++) {
 noDropSystem.heldStack = { id: BLOCK.SAND, count: 2, dur: null };
 noDropSystem.closeActiveInventory();
 ok(noDropSystem.heldStack?.id === BLOCK.SAND && noDropSystem.heldStack?.count === 2,
-'Ohne Welt-Drop-System bleibt ein bei vollem Inventar nicht einlagerbarer Stapel erhalten');
+'Without a world-drop system, an unstashable stack is preserved when the inventory is full');
 
-console.log(`\n${passed} bestanden, ${failed} fehlgeschlagen`);
+console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

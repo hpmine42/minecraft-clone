@@ -1,4 +1,4 @@
-// input.js — Tastatur + Maus (Desktop) mit Pointer-Lock.
+// input.js — Keyboard + mouse (desktop) with pointer lock.
 export class Input {
   constructor(canvas) {
     this.canvas = canvas;
@@ -6,9 +6,9 @@ export class Input {
     this.mouseDX = 0;
     this.mouseDY = 0;
     this.wheelDelta = 0;
-    this.attack = false;       // Maustaste gedrückt
-    this.attackPressed = false; // nur in diesem Frame
-    this.usePressed = false;    // rechte Maustaste in diesem Frame
+    this.attack = false;       // Mouse button held
+    this.attackPressed = false; // only in this frame
+    this.usePressed = false;    // right mouse button in this frame
     this.use = false;
     this.locked = false;
     this.enabled = true;
@@ -31,16 +31,16 @@ export class Input {
     };
     this._onMouseMove = (e) => {
       if (!this.enabled) return;
-      // Mit Pointer-Lock immer; ohne Lock nur bei gedrückter Maustaste (Drag-Look-Fallback,
-      // z. B. wenn Pointer-Lock in iframes blockiert ist)
+      // Always with pointer lock; without lock only while holding the mouse button (drag-look fallback,
+      // e.g. when pointer lock is blocked in iframes)
       if (!this.locked && !this.attack && !this.use && !this.dragLook) return;
       this.mouseDX += e.movementX || (e.mozMovementX || 0);
       this.mouseDY += e.movementY || (e.mozMovementY || 0);
     };
     this._onMouseDown = (e) => {
       if (!this.enabled) return;
-      // Ohne Pointer-Lock: Buttons funktionieren trotzdem (Drag-Look),
-      // aber nur wenn wir im Spiel sind (Canvas-Fokus)
+      // Without pointer lock, buttons still work (drag-look),
+      // but only while in the game (canvas focus)
       if (!this.locked && e.target !== this.canvas) return;
       if (e.button === 0) { this.attack = true; this.attackPressed = true; }
       if (e.button === 2) { this.use = true; this.usePressed = true; }
@@ -71,7 +71,7 @@ export class Input {
     document.addEventListener('pointerlockchange', this._onLockChange);
   }
 
-  /** Pointer Lock anfordern. */
+  /** Request pointer lock. */
   lock() {
     if (this.canvas.requestPointerLock) {
       this.canvas.requestPointerLock();
@@ -86,7 +86,7 @@ export class Input {
     return this.keys.has(code);
   }
 
-  /** Bewegungsinput aus Tastatur. */
+  /** Movement input from the keyboard. */
   movement() {
     let forward = 0;
     let right = 0;
@@ -103,7 +103,7 @@ export class Input {
     };
   }
 
-  /** Mausdelta abholen und zurücksetzen. */
+  /** Consume and reset the mouse delta. */
   consumeMouse() {
     const dx = this.mouseDX;
     const dy = this.mouseDY;

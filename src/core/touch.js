@@ -1,4 +1,4 @@
-// touch.js — Mobile Steuerung: virtueller Joystick, Look-Drag, Buttons, Multi-Touch.
+// touch.js — Mobile controls: virtual joystick, look drag, buttons, and multi-touch.
 
 export function isTouchDevice() {
   return (
@@ -8,7 +8,7 @@ export function isTouchDevice() {
   );
 }
 
-// Touch/Emulated-Maus-Doppel-Events verhindern
+// Prevent duplicate touch/emulated-mouse events
 let lastTouchTime = -Infinity;
 export function markTouchEvent() {
   lastTouchTime = (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -17,7 +17,7 @@ export function wasRecentTouch() {
   return (typeof performance !== 'undefined' ? performance.now() : Date.now()) - lastTouchTime < 700;
 }
 
-/** Bildschirmposition in einen Welt-Strahl für Touch-Interaktionen umrechnen. */
+/** Convert a screen position into a world ray for touch interactions. */
 export function screenRayDirection(player, point, width, height, fovDegrees = 75) {
   const safeWidth = Math.max(1, width);
   const safeHeight = Math.max(1, height);
@@ -41,7 +41,7 @@ export function screenRayDirection(player, point, width, height, fovDegrees = 75
 
 export class TouchControls {
   /**
-   * @param {object} els DOM-Elemente
+   * @param {object} els DOM elements
    *   joystickZone, lookZone, btnJump, btnSneak, btnFly, btnAttack, btnPlace, btnInventory, btnMenu
    * @param {object} opts { sensitivity, onAction(name) }
    */
@@ -95,7 +95,7 @@ export class TouchControls {
   _moveMineHold(touch) {
     if (this.mineId !== touch.identifier || !this.mineStart) return;
     if (Math.hypot(touch.clientX - this.mineStart.x, touch.clientY - this.mineStart.y) > this.mineMoveThreshold) {
-      // Wischen bleibt reine Blick-/Bewegungssteuerung.
+      // Swiping remains purely look/movement control.
       this.mineMoved = true;
     }
   }
@@ -226,7 +226,7 @@ export class TouchControls {
       el.addEventListener('touchstart', onDown, { passive: false });
       el.addEventListener('touchend', onUp, { passive: false });
       el.addEventListener('touchcancel', onUp, { passive: false });
-      // Maus-Support (für Hybrid-Geräte/Tests) – aber nicht direkt nach Touch
+      // Mouse support (for hybrid devices/tests), but not immediately after touch
       el.addEventListener('mousedown', (e) => {
         if (wasRecentTouch()) return;
         e.preventDefault();
@@ -252,7 +252,7 @@ export class TouchControls {
     }, () => { this.jump = false; });
 
     bind(this.els.btnSneak, () => {
-      this.setSneak(!this.sneak); // Toggle; der Status bleibt auch optisch sichtbar.
+      this.setSneak(!this.sneak); // Toggle; the state also remains visually indicated.
       this.onAction('sneak');
     }, null);
 
@@ -279,15 +279,15 @@ export class TouchControls {
     bind(this.els.btnChatless ?? null, () => this.onAction('cycleMode'), null);
   }
 
-  /** Setzt den Sneak-Schalter und synchronisiert seine Touch-Anzeige. */
+  /** Set the sneak toggle and synchronize its touch indicator. */
   setSneak(active) {
     this.sneak = !!active;
     this.els.btnSneak?.classList.toggle('toggled', this.sneak);
   }
 
   /**
-   * Position eines ruhenden Long-Presses – analog zu „gedrückt halten, um abzubauen“.
-   * Beim Wischen wird nicht abgebaut, sondern wie gewohnt die Kamera gedreht.
+   * Position of a stationary long press, equivalent to “hold to mine.”
+   * Swiping does not mine; it rotates the camera as usual.
    */
   minePoint(now = (typeof performance !== 'undefined' ? performance.now() : Date.now())) {
     if (!this.enabled || this.mineId == null || !this.mineStart || this.mineMoved) return null;
@@ -295,7 +295,7 @@ export class TouchControls {
     return { x: this.mineStart.x, y: this.mineStart.y };
   }
 
-  /** Gleiche Form wie Input.movement(). */
+  /** Same shape as Input.movement(). */
   movement() {
     return {
       forward: this.joyValue.y,

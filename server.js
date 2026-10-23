@@ -1,4 +1,4 @@
-// server.js — Minimaler statischer Webserver für Minecraft-Klon (ohne Dependencies).
+// server.js — Minimal static web server for Minecraft Clone (no dependencies).
 // Start: node server.js  →  http://localhost:8080
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -33,18 +33,18 @@ const server = createServer(async (req, res) => {
     let urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
     if (urlPath === '/') urlPath = '/index.html';
 
-    // Pfad-Sicherheit
+    // Path security
     const filePath = join(ROOT, normalize(urlPath).replace(/^(\.\.[/\\])+/, ''));
     if (!filePath.startsWith(ROOT)) {
       res.writeHead(403);
-      res.end('Verboten');
+      res.end('Forbidden');
       return;
     }
 
     const info = await stat(filePath).catch(() => null);
     if (!info || !info.isFile()) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end('404 Nicht gefunden');
+      res.end('404 Not Found');
       return;
     }
 
@@ -59,12 +59,12 @@ const server = createServer(async (req, res) => {
     res.end(data);
   } catch (err) {
     res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('500 Serverfehler');
+    res.end('500 Internal Server Error');
     console.error(err);
   }
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`Minecraft-Klon läuft auf http://${HOST}:${PORT}/`);
-  console.log('Für das Handy: dieselbe URL im Handy-Browser öffnen (gleiches WLAN/Netzwerk).');
+  console.log(`Minecraft Clone is running at http://${HOST}:${PORT}/`);
+  console.log('On mobile: open the same URL in your mobile browser (same Wi-Fi/network).');
 });

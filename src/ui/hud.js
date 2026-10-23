@@ -1,9 +1,9 @@
-// hud.js — HUD: Hotbar, Herzen, Hunger, Luftblasen, Zielblock-Fortschritt, FPS.
+// hud.js — HUD: hotbar, hearts, hunger, air bubbles, target progress, and FPS.
 import { BLOCKS, BLOCK, getName, isPlaceable } from '../world/blocks.js';
 import { drawTileIcon } from '../world/textures.js';
 import { markTouchEvent, wasRecentTouch } from '../core/touch.js';
 
-/** Weltzeit: 00:00 am Sonnenaufgang, 12:00 zur Mittagszeit. */
+/** World time: 00:00 at sunrise and 12:00 at noon. */
 export function formatWorldClock(timeOfDay) {
   if (!Number.isFinite(timeOfDay)) return '--:--';
   const dayFraction = ((timeOfDay + 0.25) % 1 + 1) % 1;
@@ -56,7 +56,7 @@ export class HUD {
       bar.appendChild(slot);
       this.slotEls.push({ slot, canvas, count, dur, durFill: dur.firstChild });
 
-      // Klick/Touch → Hotbar wählen (nur wenn HUD aktiv)
+      // Click/touch → select hotbar slot (only while the HUD is active)
       const handler = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -106,7 +106,7 @@ export class HUD {
     }
   }
 
-  /** Item-Name kurz anzeigen. */
+  /** Show an item name briefly. */
   showItemName(name) {
     const el = this.els.itemName;
     el.textContent = name;
@@ -120,7 +120,7 @@ export class HUD {
     this._refreshHeldItem();
   }
 
-  /** Screenshot-/Lesemodus: HUD vollständig ausblenden, ohne den Spielzustand zu ändern. */
+  /** Screenshot/reading mode: hide the entire HUD without changing game state. */
   setHidden(hidden) {
     this.hidden = !!hidden;
     const root = this.els.root;
@@ -128,7 +128,7 @@ export class HUD {
     return this.hidden;
   }
 
-  /** Kontext-Hinweis am Fadenkreuz; nur bei tatsächlich anvisierten Blöcken sichtbar. */
+  /** Context hint at the crosshair; visible only for an actually targeted block. */
   setTargetHint(target, player, touch = false) {
     const el = this.els.targetHint;
     if (!el) return;
@@ -145,11 +145,11 @@ export class HUD {
     const heldDef = held ? BLOCKS[held.id] : null;
     const opensContainer = [BLOCK.CRAFTING_TABLE, BLOCK.FURNACE, BLOCK.CHEST].includes(target.id);
     let action;
-    if (opensContainer) action = touch ? '▣ öffnen' : 'Rechtsklick öffnen';
+    if (opensContainer) action = touch ? '▣ open' : 'Right-click to open';
     else if (heldDef?.food > 0 && player.gamemode === 'survival' && player.hunger < player.maxHunger) {
-      action = touch ? '▣ essen' : 'Rechtsklick essen';
-    } else if (held && isPlaceable(held.id)) action = touch ? '▣ platzieren' : 'Rechtsklick platzieren';
-    else action = touch ? '⛏ abbauen' : 'Linksklick abbauen';
+      action = touch ? '▣ eat' : 'Right-click to eat';
+    } else if (held && isPlaceable(held.id)) action = touch ? '▣ place' : 'Right-click to place';
+    else action = touch ? '⛏ mine' : 'Left-click to mine';
 
     const label = `${getName(target.id)} · ${action}`;
     if (label === this.targetHintSignature) return;
@@ -158,7 +158,7 @@ export class HUD {
     el.style.display = 'block';
   }
 
-  /** Kompakte Orientierungshilfe für Region, Uhrzeit, Wetter und Höhe. */
+  /** Compact orientation aid for region, time, weather, and altitude. */
   setWorldStatus({ biome, timeOfDay, weather, y } = {}) {
     const el = this.els.worldStatus;
     if (!el) return;
@@ -169,7 +169,7 @@ export class HUD {
       return;
     }
     const hour = Number(formatWorldClock(timeOfDay).slice(0, 2));
-    const sky = weather === 'rain' ? '🌧 Regen' : (hour >= 6 && hour < 18 ? '☀ Klar' : '☾ Klar');
+    const sky = weather === 'rain' ? '🌧 Rain' : (hour >= 6 && hour < 18 ? '☀ Clear' : '☾ Clear');
     const label = `${biome} · ${formatWorldClock(timeOfDay)} · ${sky} · Y ${Math.floor(y)}`;
     if (label === this.worldStatusSignature) return;
     this.worldStatusSignature = label;
@@ -203,13 +203,13 @@ export class HUD {
   update(dt, player, gameplayActive = this.gameplayActive) {
     this.gameplayActive = !!gameplayActive;
     this._refreshHeldItem();
-    // Name-Toast ausblenden
+    // Hide the name toast
     if (this.nameToastTimer > 0) {
       this.nameToastTimer -= dt;
       if (this.nameToastTimer <= 0) this.els.itemName.classList.remove('visible');
     }
 
-    // Hotbar neu zeichnen (nur bei Änderung)
+    // Redraw the hotbar (only when changed)
     const sel = this.inventory.selected;
     const sig = this.inventory.slots.map((s) => (s ? `${s.id}:${s.count}:${s.dur ?? -1}` : '')).join('|');
     if (sig !== this._lastSig || sel !== this.lastSelected) {
@@ -243,7 +243,7 @@ export class HUD {
 
     if (!player) return;
 
-    // Herzen
+    // Hearts
     for (let i = 0; i < 10; i++) {
       const h = this.heartEls[i];
       const val = player.health - i * 2;
@@ -257,7 +257,7 @@ export class HUD {
       const val = player.hunger - i * 2;
       f.classList.toggle('empty', val <= 0);
     }
-    // Luft
+    // Air
     const showAir = player.headInWater || player.breath < player.breathMax;
     this.els.air.style.display = showAir ? 'flex' : 'none';
     if (showAir) {
@@ -267,13 +267,13 @@ export class HUD {
       }
     }
 
-    // Lebens-/Hungerleisten in Kreativmodus ausblenden
+    // Hide health and hunger bars in Creative mode
     const survival = player.gamemode === 'survival';
     this.els.hearts.style.visibility = survival ? 'visible' : 'hidden';
     this.els.hunger.style.visibility = survival ? 'visible' : 'hidden';
   }
 
-  /** FPS berechnen und anzeigen. */
+  /** Calculate and display FPS. */
   updateFPS(dt) {
     const fps = 1 / Math.max(dt, 0.0001);
     this.fpsHistory.push(fps);
@@ -283,7 +283,7 @@ export class HUD {
     return this.fps;
   }
 
-  /** Abbaufortschritt am Crosshair. */
+  /** Mining progress at the crosshair. */
   setBreakProgress(fraction) {
     const el = this.els.breakProgress;
     if (fraction > 0) {
@@ -295,10 +295,10 @@ export class HUD {
     }
   }
 
-  /** Schadens-Overlay (roter Blitz). */
+  /** Damage overlay (red flash). */
   flashHurt() {
     this.els.hurtOverlay.classList.remove('active');
-    // Reflow erzwingen
+    // Force a reflow
     void this.els.hurtOverlay.offsetWidth;
     this.els.hurtOverlay.classList.add('active');
   }
@@ -310,8 +310,8 @@ export class HUD {
   setGamemodeLabel(mode, peaceful) {
     if (this.els.modeLabel) {
       const labels = {
-        survival: peaceful ? 'Überleben (Friedlich)' : 'Überleben',
-        creative: 'Kreativ',
+        survival: peaceful ? 'Survival (Peaceful)' : 'Survival',
+        creative: 'Creative',
       };
       this.els.modeLabel.textContent = labels[mode] || mode;
     }

@@ -1,6 +1,6 @@
-// noise.js — Seedable RNG, Perlin/Simplex-Noise (2D/3D) und fBm-Helfer.
+// noise.js — Seedable RNG, Perlin/Simplex noise (2D/3D), and fBm helpers.
 
-/** Deterministischer PRNG (mulberry32). */
+/** Deterministic PRNG (mulberry32). */
 export function mulberry32(seed) {
   let a = seed >>> 0;
   return function () {
@@ -12,7 +12,7 @@ export function mulberry32(seed) {
   };
 }
 
-/** String in 32-Bit-Seed umwandeln (FNV-1a). */
+/** Convert a string into a 32-bit seed (FNV-1a). */
 export function hashSeed(str) {
   let h = 2166136261 >>> 0;
   for (let i = 0; i < str.length; i++) {
@@ -37,7 +37,7 @@ function lerp(a, b, t) {
 }
 
 /**
- * Perlin-Noise mit Seed. 2D- und 3D-Varianten, Werte ungefähr in [-1, 1].
+ * Seeded Perlin noise. 2D and 3D variants, with values approximately in [-1, 1].
  */
 export class PerlinNoise {
   constructor(seed = 0) {
@@ -67,7 +67,7 @@ export class PerlinNoise {
     return g[0] * x + g[1] * y + g[2] * z;
   }
 
-  /** 2D Perlin, Bereich ~[-1,1]. */
+  /** 2D Perlin, range ~[-1,1]. */
   noise2D(x, y) {
     const X = Math.floor(x) & 255;
     const Y = Math.floor(y) & 255;
@@ -85,7 +85,7 @@ export class PerlinNoise {
     return lerp(x1, x2, v);
   }
 
-  /** 3D Perlin, Bereich ~[-1,1]. */
+  /** 3D Perlin, range ~[-1,1]. */
   noise3D(x, y, z) {
     const X = Math.floor(x) & 255;
     const Y = Math.floor(y) & 255;
@@ -148,7 +148,7 @@ export class PerlinNoise {
     return sum / norm;
   }
 
-  /** Billowy Noise (Betrag) — nützlich für Berge/Hügel. */
+  /** Billowy noise (absolute value)—useful for mountains/hills. */
   billow2D(x, y, octaves = 4) {
     let amp = 1;
     let freq = 1;
@@ -164,13 +164,13 @@ export class PerlinNoise {
   }
 }
 
-/** Hilfsfunktion: glattes Interpolieren in einen Bereich. */
+/** Helper: smoothly interpolate into a range. */
 export function mapRange(value, inMin, inMax, outMin, outMax) {
   const t = (value - inMin) / (inMax - inMin);
   return outMin + Math.max(0, Math.min(1, t)) * (outMax - outMin);
 }
 
-/** Deterministischer Hash für Chunk-/Weltkoordinaten → [0,1). */
+/** Deterministic hash for chunk/world coordinates → [0,1). */
 export function coordHash(x, y, z, seed) {
   let h = (seed | 0) ^ Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(z | 0, 2147483647);
   h = Math.imul(h ^ (h >>> 13), 1274126177);

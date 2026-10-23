@@ -1,4 +1,4 @@
-// worldgen.js — Prozedurale Weltgenerierung: Terrain, Biome, Höhlen, Erze, Bäume, Pflanzen.
+// worldgen.js — Procedural world generation: terrain, biomes, caves, ores, trees, and plants.
 import { PerlinNoise, coordHash, mapRange, mulberry32 } from './noise.js';
 import { BLOCK } from './blocks.js';
 import { CHUNK_SIZE, CHUNK_HEIGHT, blockIndex } from './chunk.js';
@@ -17,14 +17,14 @@ export const BIOME = {
 };
 
 export const BIOME_NAMES = {
-  [BIOME.OCEAN]: 'Ozean',
-  [BIOME.BEACH]: 'Strand',
-  [BIOME.PLAINS]: 'Ebene',
-  [BIOME.FOREST]: 'Wald',
-  [BIOME.DESERT]: 'Wüste',
-  [BIOME.MOUNTAINS]: 'Berge',
-  [BIOME.SNOWY]: 'Schneefläche',
-  [BIOME.SWAMP]: 'Sumpf',
+  [BIOME.OCEAN]: 'Ocean',
+  [BIOME.BEACH]: 'Beach',
+  [BIOME.PLAINS]: 'Plains',
+  [BIOME.FOREST]: 'Forest',
+  [BIOME.DESERT]: 'Desert',
+  [BIOME.MOUNTAINS]: 'Mountains',
+  [BIOME.SNOWY]: 'Snowy Plains',
+  [BIOME.SWAMP]: 'Swamp',
 };
 
 export class WorldGen {
@@ -42,12 +42,12 @@ export class WorldGen {
     this.treeNoise = new PerlinNoise(seed ^ 0x8642);
   }
 
-  /** Biome an einer Säule bestimmen. */
+  /** Determine the biome at a column. */
   biomeAt(wx, wz) {
     return this.biomeAtHeight(wx, wz, this.heightAt(wx, wz));
   }
 
-  /** Biome bestimmen, wenn die Terrainhöhe bereits berechnet wurde. */
+  /** Determine the biome when the terrain height has already been calculated. */
   biomeAtHeight(wx, wz, height) {
     if (this.worldType === 'flat') return BIOME.PLAINS;
     const temp = this.tempNoise.fbm2D(wx * 0.0035, wz * 0.0035, 3);
@@ -62,30 +62,30 @@ export class WorldGen {
     return BIOME.PLAINS;
   }
 
-  /** Terrainhöhe (y der obersten Oberfläche) an einer Säule. */
+  /** Terrain height (y of the top surface) at a column. */
   heightAt(wx, wz) {
     if (this.worldType === 'flat') return 32;
-    const cont = this.continentNoise.fbm2D(wx * 0.0016, wz * 0.0016, 4); // Land/Ozean
+    const cont = this.continentNoise.fbm2D(wx * 0.0016, wz * 0.0016, 4); // Land/ocean
     const hills = this.heightNoise.fbm2D(wx * 0.008, wz * 0.008, 4);
     const detail = this.detailNoise.fbm2D(wx * 0.03, wz * 0.03, 2);
     const mountainMask = Math.max(0, this.heightNoise.noise2D(wx * 0.0022 + 40, wz * 0.0022 - 40));
     const mountain = Math.pow(mountainMask, 1.6) * this.detailNoise.billow2D(wx * 0.006, wz * 0.006, 4);
 
     let h = SEA_LEVEL + cont * 14 + hills * 6 + detail * 2 + mountain * 26;
-    // Ozeanbecken vertiefen
+    // Deepen ocean basins
     if (cont < -0.25) h -= mapRange(cont, -0.25, -0.8, 0, 12);
     return Math.max(3, Math.min(CHUNK_HEIGHT - 8, Math.floor(h)));
   }
 
-  /** Höhle? (zwei 3D-Noises als Tunnel + "Schwamm"-Erosion) */
+  /** Cave? (two 3D noise fields form tunnels plus sponge-like erosion) */
   isCave(wx, wy, wz) {
     if (this.worldType === 'flat') return false;
     if (wy < 2 || wy > 52) return false;
     const n1 = this.caveNoise.noise3D(wx * 0.042, wy * 0.055, wz * 0.042);
     const n2 = this.caveNoise2.noise3D(wx * 0.042 + 50, wy * 0.055 + 50, wz * 0.042 + 50);
-    // Tunnel (zwei Noise-Werte nahe 0)
+    // Tunnels (two noise values near zero)
     if (Math.abs(n1) < 0.075 && Math.abs(n2) < 0.075) return true;
-    // Größere Kavernen tief unten
+    // Larger caverns deep underground
     if (wy < 20) {
       const n3 = this.caveNoise.noise3D(wx * 0.02, wy * 0.03, wz * 0.02);
       if (n3 > 0.62) return true;
@@ -93,7 +93,7 @@ export class WorldGen {
     return false;
   }
 
-  /** Erz an Position (Wahrscheinlichkeiten tiefenabhängig). */
+  /** Ore at a position (depth-dependent probabilities). */
   oreAt(wx, wy, wz) {
     const r = coordHash(wx, wy, wz, this.seed ^ 0xabcd);
     const veinNoise = this.oreNoise.noise3D(wx * 0.11, wy * 0.11, wz * 0.11);
@@ -106,7 +106,7 @@ export class WorldGen {
     return BLOCK.AIR;
   }
 
-  /** Baum an Säule? Gibt Baumtyp oder null. Vorhandene Spaltenwerte sparen doppelte Noise-Abfragen. */
+  /** Tree at a column? Returns a tree type or null. Existing column values avoid duplicate noise lookups. */
   treeAt(wx, wz, biome = null, height = null) {
     const r = coordHash(wx, 7, wz, this.seed ^ 0x77aa);
     biome ??= this.biomeAt(wx, wz);
@@ -128,7 +128,7 @@ export class WorldGen {
   }
 
   /**
-   * Füllt einen Chunk mit Blöcken.
+   * Fill a chunk with blocks.
    */
   generate(chunk, world) {
     const baseX = chunk.cx * CHUNK_SIZE;
@@ -136,7 +136,7 @@ export class WorldGen {
     const blocks = chunk.blocks;
     const meta = chunk.meta;
 
-    // ---- Grundterrain -----------------------------------------------------
+    // ---- Base terrain -----------------------------------------------------
     for (let z = 0; z < CHUNK_SIZE; z++) {
       for (let x = 0; x < CHUNK_SIZE; x++) {
         const wx = baseX + x;
@@ -146,7 +146,7 @@ export class WorldGen {
 
         for (let y = 0; y <= Math.max(h, SEA_LEVEL); y++) {
           if (y > h && y <= SEA_LEVEL) {
-            // Wasser
+            // Water
             blocks[blockIndex(x, y, z)] = (biome === BIOME.SNOWY && y === SEA_LEVEL) ? BLOCK.ICE : BLOCK.WATER;
             continue;
           }
@@ -156,7 +156,7 @@ export class WorldGen {
           if (y === 0) id = BLOCK.BEDROCK;
           else if (y < 4 && coordHash(wx, y, wz, this.seed ^ 0x11) < 0.5) id = BLOCK.BEDROCK;
           else if (y === h) {
-            // Oberflächenblock
+            // Surface block
             switch (biome) {
               case BIOME.DESERT: id = BLOCK.SAND; break;
               case BIOME.BEACH: id = BLOCK.SAND; break;
@@ -180,13 +180,13 @@ export class WorldGen {
             id = BLOCK.STONE;
           }
 
-          // Höhlen
+          // Caves
           if (id !== BLOCK.BEDROCK && this.isCave(wx, y, wz)) {
             blocks[blockIndex(x, y, z)] = BLOCK.AIR;
             continue;
           }
 
-          // Erze (nur im Stein)
+          // Ores (stone only)
           if (id === BLOCK.STONE) {
             const ore = this.oreAt(wx, y, wz);
             if (ore !== BLOCK.AIR) id = ore;
@@ -197,7 +197,7 @@ export class WorldGen {
       }
     }
 
-    // ---- Dekoration: Bäume (mit Rand-Überschneidung) -----------------------
+    // ---- Decoration: trees (including edge overlap) -----------------------
     for (let z = -3; z < CHUNK_SIZE + 3; z++) {
       for (let x = -3; x < CHUNK_SIZE + 3; x++) {
         const wx = baseX + x;
@@ -206,13 +206,13 @@ export class WorldGen {
         const biome = this.biomeAtHeight(wx, wz, h);
         const treeType = this.treeAt(wx, wz, biome, h);
         if (!treeType || h <= SEA_LEVEL) continue;
-        // Kein Baum auf Stein/Sand-Schichten (nur Grasoberflächen)
+        // No trees on stone/sand layers (grass surfaces only)
         if (biome === BIOME.DESERT || biome === BIOME.BEACH || biome === BIOME.OCEAN) continue;
         this.placeTree(chunk, x, h, z, treeType, wx, wz);
       }
     }
 
-    // ---- Pflanzen, Kakteen, Zuckerrohr ------------------------------------
+    // ---- Plants, cacti, and sugar cane ------------------------------------
     for (let z = 0; z < CHUNK_SIZE; z++) {
       for (let x = 0; x < CHUNK_SIZE; x++) {
         const wx = baseX + x;
@@ -229,7 +229,7 @@ export class WorldGen {
 
         if (biome === BIOME.DESERT && ground === BLOCK.SAND) {
           if (r < 0.008) {
-            // Kaktus
+            // Cactus
             const ch = 1 + Math.floor(r2 * 3);
             for (let i = 0; i < ch; i++) {
               const idx = blockIndex(x, h + 1 + i, z);
@@ -248,7 +248,7 @@ export class WorldGen {
           else if (r < 0.039 && biome === BIOME.SWAMP) blocks[above] = BLOCK.MUSHROOM_RED;
         }
 
-        // Zuckerrohr nahe Wasser
+        // Sugar cane near water
         if ((biome === BIOME.PLAINS || biome === BIOME.SWAMP || biome === BIOME.DESERT || biome === BIOME.FOREST) && r < 0.01) {
           const nearWater =
             (world.getBlockQuiet && (
@@ -272,13 +272,13 @@ export class WorldGen {
     chunk.lightDirty = true;
   }
 
-  /** Baum platzieren (lokale Chunk-Koordinaten, kann über den Rand ragen). */
+  /** Place a tree (local chunk coordinates; may extend beyond the edge). */
   placeTree(chunk, x, baseY, z, type, wx, wz) {
     const rand = mulberry32((wx * 341873128 + wz * 132897987) ^ this.seed);
     const set = (lx, ly, lz, id, meta = 0) => {
       if (lx >= 0 && lx < CHUNK_SIZE && lz >= 0 && lz < CHUNK_SIZE && ly >= 0 && ly < CHUNK_HEIGHT) {
         const idx = blockIndex(lx, ly, lz);
-        // Nur in Luft pflanzen (oder Laub überschreiben)
+        // Place only in air (or overwrite leaves)
         const cur = chunk.blocks[idx];
         if (cur === BLOCK.AIR || cur === BLOCK.LEAVES || cur === BLOCK.BIRCH_LEAVES || cur === BLOCK.SPRUCE_LEAVES || cur === BLOCK.SNOW || cur === BLOCK.TALL_GRASS) {
           chunk.blocks[idx] = id;
@@ -305,7 +305,7 @@ export class WorldGen {
     } else if (type === 'spruce') {
       const trunkH = 6 + Math.floor(rand() * 3);
       for (let i = 1; i <= trunkH; i++) set(x, baseY + i, z, BLOCK.SPRUCE_LOG);
-      // Kegelförmige Krone
+      // Conical crown
       let radius = 0;
       for (let dy = 2; dy <= trunkH; dy++) {
         radius = dy > trunkH - 2 ? 1 : (dy % 2 === 0 ? 2 : 1);
@@ -322,7 +322,7 @@ export class WorldGen {
     }
   }
 
-  /** Spawn-Position finden (Land, nicht im Wasser). */
+  /** Find a spawn position (on land, not in water). */
   findSpawn() {
     for (let r = 0; r < 200; r += 4) {
       for (let a = 0; a < 16; a++) {

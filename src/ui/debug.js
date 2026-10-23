@@ -1,4 +1,4 @@
-// debug.js — F3-Debug-Overlay.
+// debug.js — F3 debug overlay.
 import { BIOME_NAMES } from '../world/worldgen.js';
 import { getName, BLOCKS } from '../world/blocks.js';
 import { formatWorldClock } from './hud.js';
@@ -19,7 +19,7 @@ export class DebugOverlay {
 
   update(player, world, fps, mobs, extra = {}) {
     if (!this.visible) return;
-    // Nicht jedes Frame neu schreiben (Performance)
+    // Do not rewrite every frame (performance)
     this.frame++;
     if (this.frame % 10 !== 0) return;
 
@@ -31,21 +31,21 @@ export class DebugOverlay {
     const target = world.raycast(player.eyePosition(), player.lookDir(), 5.2);
 
     const lines = [
-      `Minecraft-Klon v1.0 (${fps} FPS)`,
+      `Minecraft Clone v1.0 (${fps} FPS)`,
       `XYZ: ${pos.x.toFixed(2)} / ${pos.y.toFixed(2)} / ${pos.z.toFixed(2)}`,
-      `Chunk: ${chunkX}, ${chunkZ}   Blick: ${(player.yaw * 180 / Math.PI).toFixed(0)}° / ${(player.pitch * 180 / Math.PI).toFixed(0)}°`,
+      `Chunk: ${chunkX}, ${chunkZ}   Look: ${(player.yaw * 180 / Math.PI).toFixed(0)}° / ${(player.pitch * 180 / Math.PI).toFixed(0)}°`,
       `Biome: ${BIOME_NAMES[biome] || '?'}`,
-      `Modus: ${player.gamemode}${player.peaceful ? ' (friedlich)' : ''}${player.flying ? ' [FLIEGEN]' : ''}`,
-      `Leben: ${player.health}/20   Hunger: ${player.hunger}/20   Luft: ${Math.ceil(player.breath)}/10`,
-      `Chunks: ${stats.chunks} geladen (${stats.dirty} dirty)  Vertices: ${stats.solidVerts}`,
+      `Mode: ${player.gamemode}${player.peaceful ? ' (peaceful)' : ''}${player.flying ? ' [FLYING]' : ''}`,
+      `Health: ${player.health}/20   Hunger: ${player.hunger}/20   Air: ${Math.ceil(player.breath)}/10`,
+      `Chunks: ${stats.chunks} loaded (${stats.dirty} dirty)  Vertices: ${stats.solidVerts}`,
       `Entities: ${mobs ? mobs.mobs.length : 0} Mobs, ${mobs ? mobs.items.length : 0} Items`,
-      `Blöcke geändert: ${stats.modified}`,
+      `Blocks modified: ${stats.modified}`,
     ];
     if (target) {
-      lines.push(`Ziel: ${getName(target.id)} @ ${target.x},${target.y},${target.z}`);
+      lines.push(`Target: ${getName(target.id)} @ ${target.x},${target.y},${target.z}`);
     }
     if (extra.time !== undefined) {
-      lines.push(`Zeit: ${formatWorldClock(extra.time)}  Wetter: ${extra.weather === 'rain' ? 'Regen' : 'Klar'}`);
+      lines.push(`Time: ${formatWorldClock(extra.time)}  Weather: ${extra.weather === 'rain' ? 'Rain' : 'Clear'}`);
     }
     if (extra.device) {
       lines.push(extra.device);

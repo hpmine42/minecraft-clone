@@ -1,4 +1,4 @@
-// block-outline.js — flächenbündige schwarze Kantenkontur um den Zielblock.
+// block-outline.js — Flush black edge outline around the target block.
 import * as THREE from '../../lib/three.module.js';
 
 const EDGE_WIDTH = 0.012;
@@ -35,7 +35,7 @@ function makeFaceFrameGeometry() {
   };
 
   for (const face of FACE_DEFINITIONS) {
-    // Vier dünne Streifen liegen exakt in der Blockfläche und umranden sie.
+    // Four thin strips lie exactly in the block face and outline it.
     for (const sign of [-1, 1]) {
       addQuad(face, 0, sign * (half - halfWidth), half, halfWidth);
       addQuad(face, sign * (half - halfWidth), 0, halfWidth, half);
@@ -72,7 +72,7 @@ export class BlockOutline {
     this.scene.add(this.mesh);
   }
 
-  /** Zeigt die bündigen Ränder der sichtbaren Blockflächen. */
+  /** Show flush edges on visible block faces. */
   update(hit) {
     if (!hit || !Number.isFinite(hit.x) || !Number.isFinite(hit.y) || !Number.isFinite(hit.z)) {
       this.hide();

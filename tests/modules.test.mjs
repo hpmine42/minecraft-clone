@@ -1,4 +1,4 @@
-// modules.test.mjs — Alle Browser-Module importieren (mit DOM-Stubs), Syntax- und Importfehler finden.
+// modules.test.mjs — Import all browser modules (with DOM stubs) to find syntax and import errors.
 
 // Minimaler DOM-/Browser-Stub
 const ctxStub = () => new Proxy({}, {
@@ -116,10 +116,10 @@ for (const m of modules) {
   }
 }
 
-// main.js separat (startet Spiel-Loop) – nur auf Syntax/Import prüfen
+// Check main.js separately (starts the game loop) for syntax/imports only
 try {
   const src = await import('node:fs').then((fs) => fs.promises.readFile(new URL('../src/main.js', import.meta.url), 'utf8'));
-  // Extrahiere Importe und prüfe, ob alle Pfade existieren
+  // Extract imports and verify that every path exists
   const importPaths = [...src.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]);
   const fs2 = await import('node:fs');
   const path = await import('node:path');
@@ -128,15 +128,15 @@ try {
     const full = path.resolve(baseDir, p);
     if (!fs2.existsSync(full)) {
       failed++;
-      console.error(`✘ main.js: Import nicht gefunden: ${p}`);
+      console.error(`✘ main.js: import not found: ${p}`);
     }
   }
   passed++;
-  console.log('✔ src/main.js (Importe)');
+  console.log('✔ src/main.js (imports)');
 } catch (e) {
   failed++;
   console.error(`✘ src/main.js: ${e.message}`);
 }
 
-console.log(`\n${passed} Module ok, ${failed} fehlgeschlagen`);
+console.log(`\n${passed} modules passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

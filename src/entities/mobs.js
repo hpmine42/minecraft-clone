@@ -1,10 +1,10 @@
-// mobs.js — Tiere, Zombies, Item-Drops: Verhalten, Physik, Spawn-Logik.
+// mobs.js — Animals, zombies, and item drops: behavior, physics, and spawning.
 import * as THREE from '../../lib/three.module.js';
 import { BLOCK, BLOCKS } from '../world/blocks.js';
 import { PLAYER_WIDTH } from '../player/player.js';
 
 // ---------------------------------------------------------------------------
-// Gemeinsame Entity-Basis
+// Shared entity base
 // ---------------------------------------------------------------------------
 export class Entity {
   constructor(world, x, y, z) {
@@ -118,7 +118,7 @@ export class Entity {
 }
 
 // ---------------------------------------------------------------------------
-// Mob-Modelle
+// Mob models
 // ---------------------------------------------------------------------------
 function makeBox(w, h, d, color) {
   return new THREE.Mesh(
@@ -151,7 +151,7 @@ export class Animal extends Entity {
     this.hurtTime = Math.max(0, this.hurtTime - dt);
     if (this.fleeTimer > 0) this.fleeTimer -= dt;
 
-    // KI: Weglaufen bei Gefahr, sonst wandern
+    // AI: flee from danger, otherwise wander
     const pos = this.position;
     const ppos = player.position;
     const distToPlayer = Math.hypot(pos.x - ppos.x, pos.z - ppos.z);
@@ -184,14 +184,14 @@ export class Animal extends Entity {
       }
     }
 
-    // Sanft beschleunigen
+    // Accelerate smoothly
     this.velocity.x += (targetVX - this.velocity.x) * Math.min(1, dt * 8);
     this.velocity.z += (targetVZ - this.velocity.z) * Math.min(1, dt * 8);
 
     this.hitWall = false;
     const inWater = this.physicsStep(dt);
 
-    // Springen bei Hindernis
+    // Jump when blocked
     if (this.hitWall && this.onGround) {
       this.velocity.y = 7.2;
     }
@@ -205,7 +205,7 @@ export class Animal extends Entity {
     if (this.group) {
       this.group.position.set(pos.x, pos.y, pos.z);
       this.group.rotation.y = this.yaw;
-      // Beine animieren
+      // Animate legs
       if (this.legs) {
         this.legs[0].rotation.x = this.legSwing;
         this.legs[1].rotation.x = -this.legSwing;
@@ -219,7 +219,7 @@ export class Animal extends Entity {
       }
     }
 
-    // Gras fressen (Zucker? nein – nur Animation)
+    // Eat grass (animation only)
     if (Math.random() < dt * 0.02 && this.headPart) {
       this.headPart.rotation.x = 0.55;
       setTimeout(() => { if (this.headPart) this.headPart.rotation.x = 0; }, 700);
@@ -412,7 +412,7 @@ export class Zombie extends Entity {
     let targetVX = 0;
     let targetVZ = 0;
 
-    // Spieler jagen (tagsüber nur, wenn Peaceful aus und nah)
+    // Chase the player (during the day only when Peaceful is off and nearby)
     const hunt = !player.peaceful && !player.dead && dist < 22 && dist > 0.8;
     if (hunt) {
       const dx = ppos.x - pos.x;
@@ -444,13 +444,13 @@ export class Zombie extends Entity {
     if (this.hitWall && this.onGround) this.velocity.y = 7.6;
     if (inWater && Math.random() < dt * 2) this.velocity.y = 3;
 
-    // Angriff
+    // Attack
     if (hunt && dist < 1.35 && this.attackCooldown <= 0 && !player.dead) {
       this.attackCooldown = 1.1;
       const dmg = 3;
       const hit = player.takeDamage(dmg, 'zombie');
       if (hit && hooks && hooks.onPlayerHurt) hooks.onPlayerHurt(dmg);
-      // Rückstoß
+      // Knockback
       const dx = ppos.x - pos.x;
       const dz = ppos.z - pos.z;
       const len = Math.hypot(dx, dz) || 1;
@@ -459,7 +459,7 @@ export class Zombie extends Entity {
       player.velocity.y += 3.2;
     }
 
-    // Sonnenbrand tagsüber
+    // Sunlight damage during the day
     const sky = this.world.getSkyLight(Math.floor(pos.x), Math.floor(pos.y + 1), Math.floor(pos.z));
     this.burning = sky >= 15 && worldTime > 0.05 && worldTime < 0.45;
     if (this.burning) {
@@ -493,7 +493,7 @@ export class Zombie extends Entity {
   }
 
   onHurt(fromPos) {
-    // Zombie bleibt hartnäckig
+    // Zombies remain persistent
     this.wanderDir = { x: fromPos.x - this.position.x, z: fromPos.z - this.position.z };
     const len = Math.hypot(this.wanderDir.x, this.wanderDir.z) || 1;
     this.wanderDir.x /= len;
@@ -510,7 +510,7 @@ export class Zombie extends Entity {
 }
 
 // ---------------------------------------------------------------------------
-// Item-Entity (liegengebliebene Drops)
+// Item entity (dropped items)
 // ---------------------------------------------------------------------------
 const ITEM_COLORS = {
   [BLOCK.PORKCHOP]: 0xeb8c8c, [BLOCK.COOKED_PORKCHOP]: 0xc88258,
@@ -559,7 +559,7 @@ export class ItemEntity extends Entity {
     this.velocity.y = Math.max(this.velocity.y - 24 * dt, -40);
     this.physicsStep(dt);
 
-    // Anziehung + Aufsammeln
+    // Attraction + pickup
     const pos = this.position;
     const ppos = player.position;
     const eyeY = ppos.y + 0.8;
@@ -594,7 +594,7 @@ export class ItemEntity extends Entity {
 }
 
 // ---------------------------------------------------------------------------
-// Mob-Manager: Spawning, Update, Drops
+// Mob manager: spawning, updates, and drops
 // ---------------------------------------------------------------------------
 export class MobManager {
   constructor(scene, world) {
@@ -643,7 +643,7 @@ export class MobManager {
     return wasAlive;
   }
 
-  /** Zufällige Spawn-Position um den Spieler. */
+  /** Random spawn position around the player. */
   findSpawnPos(playerPos, hostile) {
     for (let attempt = 0; attempt < 8; attempt++) {
       const angle = Math.random() * Math.PI * 2;
@@ -652,7 +652,7 @@ export class MobManager {
       const z = Math.floor(playerPos.z + Math.sin(angle) * dist);
       const h = this.world.heightAt(x, z);
       if (h <= 0) continue;
-      // Ist die Oberfläche frei?
+      // Is the surface clear?
       const ground = this.world.getBlock(x, h, z);
       const a1 = this.world.getBlock(x, h + 1, z);
       const a2 = this.world.getBlock(x, h + 2, z);
@@ -661,7 +661,7 @@ export class MobManager {
       if (a1 !== BLOCK.AIR || a2 !== BLOCK.AIR) continue;
       if (ground === BLOCK.WATER || ground === BLOCK.LAVA) continue;
       if (hostile) {
-        // Zombies nur im Dunkeln (nicht auf beleuchteten Blöcken)
+        // Zombies spawn only in darkness (not on lit blocks)
         const light = Math.max(
           this.world.getSkyLight(x, h + 1, z),
           this.world.getBlockLight(x, h + 1, z)
@@ -669,7 +669,7 @@ export class MobManager {
         if (light > 7) continue;
         return { x: x + 0.5, y: h + 1, z: z + 0.5 };
       }
-      // Tiere nur auf Gras/Erde/Schnee/Sand
+      // Animals spawn only on grass/dirt/snow/sand
       if (![BLOCK.GRASS, BLOCK.DIRT, BLOCK.SNOW, BLOCK.SAND, BLOCK.STONE].includes(ground)) continue;
       if (ground === BLOCK.SAND && Math.random() < 0.7) continue;
       return { x: x + 0.5, y: h + 1, z: z + 0.5 };
@@ -693,7 +693,7 @@ export class MobManager {
 
   /**
    * Update.
-   * @param {number} worldTime Tageszeit 0..1 (0.25 = Mittag)
+   * @param {number} worldTime time of day 0..1 (0.25 = noon)
    */
   update(dt, player, inventory, hooks, worldTime) {
     const isNight = worldTime > 0.5;
@@ -725,7 +725,7 @@ export class MobManager {
       }
     }
 
-    // Entities updaten
+    // Update entities
     for (const mob of this.mobs) {
       if (mob.passive) {
         mob.update(dt, player, hooks);
@@ -737,7 +737,7 @@ export class MobManager {
       item.update(dt, player, inventory, hooks);
     }
 
-    // Aufräumen: entfernte/tote Entities
+    // Cleanup: remove distant/dead entities
     const pp = player.position;
     this.mobs = this.mobs.filter((mob) => {
       const dist = Math.hypot(mob.position.x - pp.x, mob.position.z - pp.z);
@@ -758,18 +758,18 @@ export class MobManager {
     });
   }
 
-  /** Alle Mobs nahe einer Position (für Klick-/Schlag-Interaktion). */
+  /** All mobs near a position (for click/attack interactions). */
   raycastMob(origin, dir, maxDist = 4) {
     let best = null;
     let bestDist = maxDist;
     for (const mob of this.mobs) {
-      // Näherungsweise: Punkt-AABB-Distanz entlang Strahl
+      // Approximate point-to-AABB distance along the ray
       const w = mob.width / 2 + 0.25;
       const minX = mob.position.x - w, maxX = mob.position.x + w;
       const minY = mob.position.y, maxY = mob.position.y + mob.height + 0.2;
       const minZ = mob.position.z - w, maxZ = mob.position.z + w;
 
-      // AABB-Ray-Intersection (Slab-Methode)
+      // AABB/ray intersection (slab method)
       let tmin = -Infinity, tmax = Infinity;
       const o = [origin.x, origin.y, origin.z];
       const d = [dir.x, dir.y, dir.z];

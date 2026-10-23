@@ -1,4 +1,4 @@
-// furnace.test.mjs — Schmelzrezepte, Brennstoff, Fortschritt und Zustand.
+// furnace.test.mjs — Smelting recipes, fuel, progress, and state.
 import { BLOCK } from '../src/world/blocks.js';
 import {
   canPlaceFurnaceItem,
@@ -15,7 +15,7 @@ let passed = 0;
 let failed = 0;
 function ok(condition, message) {
   if (condition) passed++;
-  else { failed++; console.error(`FEHL: ${message}`); }
+  else { failed++; console.error(`FAIL: ${message}`); }
 }
 
 const recipes = [
@@ -32,25 +32,25 @@ const recipes = [
   [BLOCK.CHICKEN, BLOCK.COOKED_CHICKEN],
 ];
 for (const [input, output] of recipes) {
-  ok(getSmeltingRecipe(input)?.id === output, `Rezept ${input} → ${output}`);
+  ok(getSmeltingRecipe(input)?.id === output, `Recipe ${input} → ${output}`);
 }
-ok(getSmeltingRecipe(BLOCK.DIAMOND_ORE) === null, 'Nicht unterstützte Erze werden nicht geschmolzen');
-ok(getSmeltingRecipe(BLOCK.LOG)?.seconds === 8, 'Holz wird in Holzkohle umgewandelt');
+ok(getSmeltingRecipe(BLOCK.DIAMOND_ORE) === null, 'Unsupported ores are not smelted');
+ok(getSmeltingRecipe(BLOCK.LOG)?.seconds === 8, 'Wood is converted into charcoal');
 
-ok(getFuelDuration(BLOCK.COAL) === 80, 'Kohle brennt 80 Sekunden');
-ok(getFuelDuration(BLOCK.CHARCOAL) === 80, 'Holzkohle brennt 80 Sekunden');
-ok(getFuelDuration(BLOCK.PLANKS) === 15, 'Bretter sind Brennstoff');
-ok(getFuelDuration(BLOCK.STICK) === 5, 'Stöcke sind Brennstoff');
-ok(getFuelDuration(BLOCK.IRON_INGOT) === 0, 'Metallbarren sind kein Brennstoff');
-ok(isFuelItem(BLOCK.CHARCOAL), 'Holzkohle wird als Brennstoff erkannt');
-ok(canPlaceFurnaceItem(FURNACE_SLOT.INPUT, BLOCK.IRON_ORE), 'Erz passt in den Rohstoff-Slot');
-ok(!canPlaceFurnaceItem(FURNACE_SLOT.INPUT, BLOCK.COAL), 'Kohle passt nicht in den Rohstoff-Slot');
-ok(canPlaceFurnaceItem(FURNACE_SLOT.FUEL, BLOCK.COAL), 'Kohle passt in den Brennstoff-Slot');
-ok(!canPlaceFurnaceItem(FURNACE_SLOT.OUTPUT, BLOCK.IRON_INGOT), 'Ergebnis-Slot ist nicht befüllbar');
+ok(getFuelDuration(BLOCK.COAL) === 80, 'Coal burns for 80 seconds');
+ok(getFuelDuration(BLOCK.CHARCOAL) === 80, 'Charcoal burns for 80 seconds');
+ok(getFuelDuration(BLOCK.PLANKS) === 15, 'Planks are fuel');
+ok(getFuelDuration(BLOCK.STICK) === 5, 'Sticks are fuel');
+ok(getFuelDuration(BLOCK.IRON_INGOT) === 0, 'Metal ingots are not fuel');
+ok(isFuelItem(BLOCK.CHARCOAL), 'Charcoal is recognized as fuel');
+ok(canPlaceFurnaceItem(FURNACE_SLOT.INPUT, BLOCK.IRON_ORE), 'Ore fits in the input slot');
+ok(!canPlaceFurnaceItem(FURNACE_SLOT.INPUT, BLOCK.COAL), 'Coal does not fit in the input slot');
+ok(canPlaceFurnaceItem(FURNACE_SLOT.FUEL, BLOCK.COAL), 'Coal fits in the fuel slot');
+ok(!canPlaceFurnaceItem(FURNACE_SLOT.OUTPUT, BLOCK.IRON_INGOT), 'The result slot cannot be filled directly');
 
 const idle = createFurnaceState({ slots: [{ id: BLOCK.IRON_ORE, count: 1 }, null, null] });
-ok(tickFurnace(idle, 2) === false, 'Ohne Brennstoff entsteht kein Produkt');
-ok(idle.progress === 0 && idle.slots[0].count === 1, 'Ohne Brennstoff bleibt der Rohstoff unverändert');
+ok(tickFurnace(idle, 2) === false, 'No product is created without fuel');
+ok(idle.progress === 0 && idle.slots[0].count === 1, 'The ingredient remains unchanged without fuel');
 
 const furnace = createFurnaceState({
   slots: [
@@ -59,15 +59,15 @@ const furnace = createFurnaceState({
     null,
   ],
 });
-ok(tickFurnace(furnace, 4) === true, 'Beim Start wird eine Kohle verbraucht');
-ok(furnace.slots[FURNACE_SLOT.FUEL] === null, 'Letzte Kohle wurde aus dem Brennstoff-Slot entfernt');
-ok(furnace.progress === 4 && furnace.slots[FURNACE_SLOT.INPUT].count === 2, 'Schmelzfortschritt wird angesammelt');
-ok(tickFurnace(furnace, 4) === true, 'Nach acht Sekunden wird ein Barren ausgegeben');
-ok(furnace.slots[FURNACE_SLOT.OUTPUT]?.id === BLOCK.IRON_INGOT, 'Eisenbarren liegt im Ergebnis-Slot');
-ok(furnace.slots[FURNACE_SLOT.INPUT]?.count === 1, 'Ein Erz wurde verbraucht');
-ok(tickFurnace(furnace, 8) === true, 'Zweites Erz kann mit derselben Brennladung verarbeitet werden');
-ok(furnace.slots[FURNACE_SLOT.OUTPUT]?.count === 2, 'Barren werden im Ergebnis-Slot gestapelt');
-ok(furnace.slots[FURNACE_SLOT.INPUT] === null, 'Alle Erze wurden verbraucht');
+ok(tickFurnace(furnace, 4) === true, 'One coal is consumed at startup');
+ok(furnace.slots[FURNACE_SLOT.FUEL] === null, 'The last coal is removed from the fuel slot');
+ok(furnace.progress === 4 && furnace.slots[FURNACE_SLOT.INPUT].count === 2, 'Smelting progress accumulates');
+ok(tickFurnace(furnace, 4) === true, 'An ingot is produced after eight seconds');
+ok(furnace.slots[FURNACE_SLOT.OUTPUT]?.id === BLOCK.IRON_INGOT, 'An iron ingot is placed in the result slot');
+ok(furnace.slots[FURNACE_SLOT.INPUT]?.count === 1, 'One ore was consumed');
+ok(tickFurnace(furnace, 8) === true, 'A second ore can be processed with the same burn cycle');
+ok(furnace.slots[FURNACE_SLOT.OUTPUT]?.count === 2, 'Ingots stack in the result slot');
+ok(furnace.slots[FURNACE_SLOT.INPUT] === null, 'All ores were consumed');
 
 const charcoal = createFurnaceState({
   slots: [
@@ -77,8 +77,8 @@ const charcoal = createFurnaceState({
   ],
 });
 tickFurnace(charcoal, 8);
-ok(charcoal.slots[FURNACE_SLOT.OUTPUT]?.id === BLOCK.CHARCOAL, 'Holz ergibt Holzkohle');
-ok(getFuelDuration(charcoal.slots[FURNACE_SLOT.OUTPUT].id) === 80, 'Erzeugte Holzkohle kann den Ofen befeuern');
+ok(charcoal.slots[FURNACE_SLOT.OUTPUT]?.id === BLOCK.CHARCOAL, 'Wood produces charcoal');
+ok(getFuelDuration(charcoal.slots[FURNACE_SLOT.OUTPUT].id) === 80, 'Produced charcoal can fuel the furnace');
 
 const blocked = createFurnaceState({
   slots: [
@@ -87,27 +87,27 @@ const blocked = createFurnaceState({
     { id: BLOCK.IRON_INGOT, count: 64 },
   ],
 });
-ok(tickFurnace(blocked, 3) === false, 'Volle Ausgabe verhindert das Schmelzen');
-ok(blocked.slots[FURNACE_SLOT.FUEL].count === 1 && blocked.progress === 0, 'Bei voller Ausgabe wird kein neuer Brennstoff verbraucht');
+ok(tickFurnace(blocked, 3) === false, 'A full output prevents smelting');
+ok(blocked.slots[FURNACE_SLOT.FUEL].count === 1 && blocked.progress === 0, 'No new fuel is consumed while the output is full');
 
 const burningWithoutInput = createFurnaceState({ burnRemaining: 5, burnTotal: 80 });
 tickFurnace(burningWithoutInput, 2);
-ok(burningWithoutInput.burnRemaining === 3, 'Bereits entzündeter Brennstoff brennt auch ohne Eingang weiter');
+ok(burningWithoutInput.burnRemaining === 3, 'Already burning fuel continues to burn without input');
 tickFurnace(burningWithoutInput, 4);
-ok(burningWithoutInput.burnRemaining === 0 && burningWithoutInput.burnTotal === 0, 'Abgebrannter Brennstoff wird zurückgesetzt');
+ok(burningWithoutInput.burnRemaining === 0 && burningWithoutInput.burnTotal === 0, 'Spent fuel is reset');
 
 const saved = serializeFurnaceState(furnace);
 const restored = createFurnaceState(saved);
-ok(restored.slots[FURNACE_SLOT.OUTPUT]?.count === 2, 'Ergebnis bleibt beim Speichern erhalten');
-ok(restored.burnRemaining === furnace.burnRemaining, 'Brennzeit bleibt beim Speichern erhalten');
-ok(restored.slots !== furnace.slots && restored.slots[2] !== furnace.slots[2], 'Geladene Ofen-Slots sind unabhängige Objekte');
+ok(restored.slots[FURNACE_SLOT.OUTPUT]?.count === 2, 'The result persists when saved');
+ok(restored.burnRemaining === furnace.burnRemaining, 'Burn time persists when saved');
+ok(restored.slots !== furnace.slots && restored.slots[2] !== furnace.slots[2], 'Loaded furnace slots are independent objects');
 const sanitized = createFurnaceState({
   slots: [{ id: BLOCK.IRON_ORE, count: 999 }, { id: 9999, count: 3 }],
   progress: -4,
   burnRemaining: 'not-a-number',
 });
-ok(sanitized.slots[0].count === 64 && sanitized.slots[1] === null, 'Ungültige/zu große gespeicherte Stapel werden bereinigt');
-ok(sanitized.progress === 0 && sanitized.burnRemaining === 0, 'Ungültige Fortschrittswerte werden bereinigt');
+ok(sanitized.slots[0].count === 64 && sanitized.slots[1] === null, 'Invalid or oversized saved stacks are sanitized');
+ok(sanitized.progress === 0 && sanitized.burnRemaining === 0, 'Invalid progress values are sanitized');
 
-console.log(`\n${passed} bestanden, ${failed} fehlgeschlagen`);
+console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

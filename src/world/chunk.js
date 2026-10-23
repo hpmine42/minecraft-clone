@@ -1,4 +1,4 @@
-// chunk.js — Chunk-Daten (Blöcke, Meta, Licht) und Mesh-Erzeugung mit AO.
+// chunk.js — Chunk data (blocks, metadata, lighting) and mesh generation with AO.
 import * as THREE from '../../lib/three.module.js';
 import { BLOCKS, RENDER, BLOCK, isOpaque, isTransparent } from './blocks.js';
 import { TILE_SIZE, ATLAS_COLS } from './textures.js';
@@ -7,17 +7,17 @@ export const CHUNK_SIZE = 16;
 export const CHUNK_HEIGHT = 64;
 export const CHUNK_VOLUME = CHUNK_SIZE * CHUNK_HEIGHT * CHUNK_SIZE;
 
-/** Index im Chunk-Array. */
+/** Index in the chunk array. */
 export function blockIndex(x, y, z) {
   return x + z * CHUNK_SIZE + y * CHUNK_SIZE * CHUNK_SIZE;
 }
 
-/** Atlas-UV-Rechteck für eine Kachel. */
+/** Atlas UV rectangle for a tile. */
 export function tileUV(tileIndex) {
   const col = tileIndex % ATLAS_COLS;
   const row = Math.floor(tileIndex / ATLAS_COLS);
   const s = 1 / ATLAS_COLS;
-  // Kleiner Inset gegen Texture-Bleeding
+  // Small inset to prevent texture bleeding
   const e = 0.0005;
   return { u0: col * s + e, v0: 1 - (row + 1) * s + e, u1: (col + 1) * s - e, v1: 1 - row * s - e };
 }
@@ -27,10 +27,10 @@ export class Chunk {
     this.cx = cx;
     this.cz = cz;
     this.blocks = new Uint8Array(CHUNK_VOLUME);
-    this.meta = new Uint8Array(CHUNK_VOLUME);   // z. B. Wachstumsstufe
+    this.meta = new Uint8Array(CHUNK_VOLUME);   // e.g. growth stage
     this.skyLight = new Uint8Array(CHUNK_VOLUME);
     this.blockLight = new Uint8Array(CHUNK_VOLUME);
-    this.dirty = true;           // Mesh neu bauen?
+    this.dirty = true;           // Rebuild mesh?
     this.lightDirty = true;
     this.generated = false;
     this.meshSolid = null;
@@ -64,9 +64,9 @@ export class Chunk {
   }
 }
 
-// Face-Definitionen: Ecken (CCW von außen), AO-Nachbarn, Shade
+// Face definitions: corners (CCW from outside), AO neighbors, and shading
 const FACES = [
-  { // +X (rechts)
+  { // +X (right)
     dir: [1, 0, 0],
     corners: [
       { pos: [1, 0, 1], uv: [0, 0], ao: [[1, -1, 0], [1, 0, 1], [1, -1, 1]] },
@@ -76,7 +76,7 @@ const FACES = [
     ],
     shade: 0.72,
   },
-  { // -X (links)
+  { // -X (left)
     dir: [-1, 0, 0],
     corners: [
       { pos: [0, 0, 0], uv: [0, 0], ao: [[-1, -1, 0], [-1, 0, -1], [-1, -1, -1]] },
@@ -86,7 +86,7 @@ const FACES = [
     ],
     shade: 0.72,
   },
-  { // +Y (oben)
+  { // +Y (top)
     dir: [0, 1, 0],
     corners: [
       { pos: [0, 1, 1], uv: [1, 1], ao: [[-1, 1, 0], [0, 1, 1], [-1, 1, 1]] },
@@ -96,7 +96,7 @@ const FACES = [
     ],
     shade: 1.0,
   },
-  { // -Y (unten)
+  { // -Y (bottom)
     dir: [0, -1, 0],
     corners: [
       { pos: [0, 0, 0], uv: [1, 1], ao: [[-1, -1, 0], [0, -1, -1], [-1, -1, -1]] },
@@ -106,7 +106,7 @@ const FACES = [
     ],
     shade: 0.55,
   },
-  { // +Z (vorne)
+  { // +Z (front)
     dir: [0, 0, 1],
     corners: [
       { pos: [0, 0, 1], uv: [0, 0], ao: [[-1, -1, 1], [0, -1, 1], [-1, 0, 1]] },
@@ -116,7 +116,7 @@ const FACES = [
     ],
     shade: 0.85,
   },
-  { // -Z (hinten)
+  { // -Z (back)
     dir: [0, 0, -1],
     corners: [
       { pos: [1, 0, 0], uv: [0, 0], ao: [[1, -1, -1], [0, -1, -1], [1, 0, -1]] },
@@ -129,7 +129,7 @@ const FACES = [
 ];
 
 /**
- * AO-Wert (0-3) für eine Ecke berechnen.
+ * Calculate the AO value (0–3) for a corner.
  */
 function vertexAO(side1, side2, corner, lightFn) {
   const s1 = lightFn(...side1);
@@ -140,8 +140,8 @@ function vertexAO(side1, side2, corner, lightFn) {
 }
 
 /**
- * Baut die Geometrie eines Chunks.
- * @param {object} world Welt mit getBlock/getMeta/getSkyLight/getBlockLight (Weltkoordinaten)
+ * Build a chunk's geometry.
+ * @param {object} world world with getBlock/getMeta/getSkyLight/getBlockLight (world coordinates)
  * @param {Chunk} chunk
  * @param {object} opts { textures: {water: THREE.Texture} }
  * @returns {{solid: THREE.BufferGeometry|null, transparent: THREE.BufferGeometry|null}}
@@ -192,7 +192,7 @@ export function buildChunkGeometry(world, chunk) {
     }
     return world.getBlockLight(baseX + x, y, baseZ + z);
   };
-  /** Block bricht Licht/Sicht? */
+  /** Does the block obstruct light/vision? */
   const isOcc = (x, y, z) => isOpaque(getBlock(x, y, z));
 
   const lightAt = (x, y, z) => {
@@ -229,14 +229,14 @@ export function buildChunkGeometry(world, chunk) {
         const meta = chunk.meta[blockIndex(x, y, z)];
 
         if (def.render === RENDER.CROSS || def.render === RENDER.CROP) {
-          // X-förmige Pflanzen
+          // X-shaped plants
           const tile = def.render === RENDER.CROP
             ? (def.cropTiles ? def.cropTiles[Math.min(meta, def.cropTiles.length - 1)] : def.tiles[0])
             : def.tiles[0];
           const uvRect = tileUV(tile);
-          // Pflanzen ohne Beleuchtungsmodell ganz auf Schwarz fallen zu lassen,
-          // macht sie selbst bei kleinen Lichtdatenfehlern unsichtbar. Die
-          // Materialtönung übernimmt weiterhin den Tag-/Nachtwechsel.
+          // Letting plants without a lighting model fall completely to black would
+          // make them invisible after even minor lighting-data errors. Material
+          // tinting still handles the day/night transition.
           const light = Math.max(0.45, lightAt(x, y, z));
           const r = light, g = light, b = light;
           const planes = [
@@ -251,8 +251,8 @@ export function buildChunkGeometry(world, chunk) {
               [c[0], y + 1, c[2]],
               [c[0], y, c[2]],
             ];
-            // Ein Quad pro Ebene – das DoubleSide-Material rendert beide Seiten,
-            // ohne deckungsgleiche Zwillings-Quads (Z-Fighting-Schachbrett).
+            // One quad per plane—the DoubleSide material renders both sides
+            // without overlapping twin quads (z-fighting checkerboard).
             for (const p of pts) tPositions.push(p[0], p[1], p[2]);
             tNormals.push(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0);
             tUvs.push(
@@ -268,9 +268,9 @@ export function buildChunkGeometry(world, chunk) {
         }
 
         if (def.render === RENDER.TORCH) {
-          // Schlanke Fackel
+          // Slim torch
           const uvRect = tileUV(def.tiles[0]);
-          const light = 1.0; // Fackel leuchtet selbst
+          const light = 1.0; // Torches emit light
           const x0 = x + 0.42, x1 = x + 0.58, z0 = z + 0.42, z1 = z + 0.58, y0 = y, y1 = y + 0.65;
           const quads = [
             { n: [1, 0, 0], v: [[x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]], u: [uvRect.u1, uvRect.u0] },
@@ -296,7 +296,7 @@ export function buildChunkGeometry(world, chunk) {
         if (def.render === RENDER.LADDER) {
           const uvRect = tileUV(def.tiles[0]);
           const light = lightAt(x, y, z);
-          // Nur dort zeichnen, wo ein massiver Block daneben ist
+          // Draw only where a solid block is adjacent
           const sides = [
             { off: [1, 0, 0], dir: [1, 0, 0], quad: [[x + 1, y, z + 0.05], [x + 1, y + 1, z + 0.05], [x + 1, y + 1, z + 0.95], [x + 1, y, z + 0.95]] },
             { off: [-1, 0, 0], dir: [-1, 0, 0], quad: [[x, y, z + 0.95], [x, y + 1, z + 0.95], [x, y + 1, z + 0.05], [x, y, z + 0.05]] },
@@ -318,7 +318,7 @@ export function buildChunkGeometry(world, chunk) {
           continue;
         }
 
-        // ---- Normaler Quader (CUBE / WATER / LAVA / LEAVES / GLASS) ----
+        // ---- Standard cuboid (CUBE / WATER / LAVA / LEAVES / GLASS) ----
         const isWater = def.render === RENDER.WATER;
         const isLava = id === BLOCK.LAVA;
         const isFluid = isWater || isLava;
@@ -340,18 +340,18 @@ export function buildChunkGeometry(world, chunk) {
           const nDef = BLOCKS[neighbor];
 
           if (isFluid) {
-            // Flüssigkeit nur zeigen, wenn Nachbar nicht gleich/opak
+            // Show a fluid face only when the neighbor differs and is not opaque
             if (neighbor === id || isOpaque(neighbor)) continue;
           } else if (isTrans) {
-            // Transparente Blöcke: Face zeigen, wenn Nachbar nicht opak und nicht gleicher Typ (Glas/Wasser)
+            // Transparent blocks: show a face when the neighbor is non-opaque and of another type (glass/water)
             if (isOpaque(neighbor)) continue;
             if (neighbor === id && def.render === RENDER.GLASS) continue;
           } else {
-            // Opake Blöcke: Face nur zum transparenten Nachbarn hin
+            // Opaque blocks: show a face only toward a transparent neighbor
             if (isOpaque(neighbor)) continue;
           }
 
-          // Kachel wählen
+          // Select tile
           let tile;
           if (face.dir[1] === 1) tile = tiles[0];
           else if (face.dir[1] === -1) tile = tiles[2] != null ? tiles[2] : tiles[1];
@@ -360,7 +360,7 @@ export function buildChunkGeometry(world, chunk) {
 
           const base = target.p.length / 3;
 
-          // Wasser-Oberfläche leicht absenken
+          // Lower the water surface slightly
           const topY = isWater && face.dir[1] === 1 && getBlock(x, y + 1, z) !== BLOCK.WATER ? 0.875 : 1;
 
           const aoValues = [];
@@ -378,7 +378,7 @@ export function buildChunkGeometry(world, chunk) {
                   (bx, by, bz) => (isOcc(bx, by, bz) ? 1 : 0)
                 );
             aoValues.push(ao);
-            // Licht am Nachbarblock der Face
+            // Light at the face's neighboring block
             const nl = Math.max(
               getSky(nx, ny, nz) / 15,
               getBL(nx, ny, nz) / 15
@@ -394,7 +394,7 @@ export function buildChunkGeometry(world, chunk) {
             target.p.push(px, py, pz);
             target.n.push(face.dir[0], face.dir[1], face.dir[2]);
             if (isFluid) {
-              // Flüssigkeiten nutzen ganze Textur (animierter Frame-Streifen)
+              // Fluids use the full texture (animated frame strip)
               target.u.push(corner.uv[0], corner.uv[1]);
             } else {
               target.u.push(
@@ -402,17 +402,16 @@ export function buildChunkGeometry(world, chunk) {
                 corner.uv[1] ? uvRect.v1 : uvRect.v0
               );
             }
-            // Etwas kräftigere, aber weiterhin begrenzte Eckabdunklung gibt den Pixelblöcken mehr räumliche Tiefe.
+            // Slightly stronger but still bounded corner darkening gives pixel blocks more depth.
             const aoLight = isTrans || isFluid ? 1 : 1 - (aoValues[ci] * 0.16);
             const l = Math.max(0.06, lightValues[ci]) * face.shade * aoLight;
             target.c.push(l, l, l);
           }
 
-          // Triangulierung (AO-Kante flippen für besseren Verlauf)
+          // Triangulation (flip the AO edge for a better gradient)
           const flip = aoValues[0] + aoValues[2] > aoValues[1] + aoValues[3];
-          // Die seitlichen FACES sind in der Vertex-Reihenfolge nach innen
-          // gewunden. Indizes hier umdrehen, damit FrontSide-Materialien die
-          // Außenseite tatsächlich zeichnen (Three.js verwirft Rückseiten).
+          // The side FACES are wound inward in vertex order. Reverse the indices here
+          // so FrontSide materials actually draw the outside (Three.js culls backfaces).
           const reverseWinding = face.dir[1] === 0;
           pushQuad(target, base, flip, reverseWinding);
         }
@@ -440,7 +439,7 @@ export function buildChunkGeometry(world, chunk) {
   };
 }
 
-/** Prüft, ob ein Block einen Nachbarn zur Face braucht (Hilfsfunktion für Tests). */
+/** Check whether a block needs a neighbor for a face (test helper). */
 export function shouldDrawFace(id, neighborId) {
   if (id === BLOCK.AIR) return false;
   const def = BLOCKS[id];

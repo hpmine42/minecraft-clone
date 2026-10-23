@@ -1,32 +1,32 @@
-// particles.js — Partikelsystem (Bruchstücke, Spritzer, Rauch, Funken) auf THREE.Points-Basis.
+// particles.js — Particle system (debris, splashes, smoke, sparks) based on THREE.Points.
 import * as THREE from '../../lib/three.module.js';
 
 const MAX_PARTICLES = 800;
 const PARTICLE_LIMITS = { high: MAX_PARTICLES, low: 180 };
 
-// Ungefähre Farben pro Block für Bruchpartikel
+// Approximate per-block colors for debris particles
 export const PARTICLE_COLORS = {
-  1: [0.5, 0.5, 0.5],       // Stein
-  2: [0.38, 0.63, 0.26],    // Gras
-  3: [0.53, 0.38, 0.26],    // Erde
-  4: [0.41, 0.41, 0.41],    // Bruchstein
-  5: [0.7, 0.56, 0.35],     // Bretter
+  1: [0.5, 0.5, 0.5],       // Stone
+  2: [0.38, 0.63, 0.26],    // Grass
+  3: [0.53, 0.38, 0.26],    // Dirt
+  4: [0.41, 0.41, 0.41],    // Cobblestone
+  5: [0.7, 0.56, 0.35],     // Planks
   7: [0.27, 0.27, 0.27],    // Bedrock
-  8: [0.2, 0.42, 0.79],     // Wasser
+  8: [0.2, 0.42, 0.79],     // Water
   9: [0.81, 0.36, 0.08],    // Lava
   10: [0.86, 0.8, 0.62],    // Sand
-  11: [0.5, 0.47, 0.45],    // Kies
-  12: [0.5, 0.5, 0.5],      // Gold-Erz (Stein)
+  11: [0.5, 0.47, 0.45],    // Gravel
+  12: [0.5, 0.5, 0.5],      // Gold ore (stone)
   13: [0.55, 0.5, 0.47],
   14: [0.45, 0.45, 0.45],
   15: [0.48, 0.55, 0.55],
-  17: [0.41, 0.32, 0.2],    // Stamm
-  18: [0.24, 0.5, 0.19],    // Laub
-  19: [0.82, 0.9, 0.94],    // Glas
-  21: [0.91, 0.91, 0.91],   // Wolle
-  30: [0.95, 0.96, 0.98],   // Schnee
+  17: [0.41, 0.32, 0.2],    // Log
+  18: [0.24, 0.5, 0.19],    // Leaves
+  19: [0.82, 0.9, 0.94],    // Glass
+  21: [0.91, 0.91, 0.91],   // Wool
+  30: [0.95, 0.96, 0.98],   // Snow
   33: [0.7, 0.56, 0.35],
-  35: [0.82, 0.19, 0.16],   // Mohn
+  35: [0.82, 0.19, 0.16],   // Poppy
 };
 
 export class ParticleSystem {
@@ -60,7 +60,7 @@ export class ParticleSystem {
     this.maxParticles = MAX_PARTICLES;
   }
 
-  /** Partikelbudget setzen, ohne die feste GPU-Puffergröße neu anzulegen. */
+  /** Set the particle budget without reallocating the fixed GPU buffer. */
   setQuality(quality) {
     this.quality = quality === 'low' ? 'low' : 'high';
     this.maxParticles = PARTICLE_LIMITS[this.quality];
@@ -71,7 +71,7 @@ export class ParticleSystem {
     return this.quality;
   }
 
-  /** Partikel erzeugen. */
+  /** Spawn a particle. */
   spawn(x, y, z, r, g, b, opts = {}) {
     if (this.count >= this.maxParticles) return;
     const i = this.count++;
@@ -95,7 +95,7 @@ export class ParticleSystem {
     this.geometry.setDrawRange(0, this.count);
   }
 
-  /** Block-Bruchpartikel. */
+  /** Block debris particles. */
   blockBreak(x, y, z, blockId, count = 12) {
     const c = PARTICLE_COLORS[blockId] || [0.5, 0.5, 0.5];
     for (let i = 0; i < count; i++) {
@@ -106,7 +106,7 @@ export class ParticleSystem {
     }
   }
 
-  /** Wasser-Spritzer. */
+  /** Water splashes. */
   splash(x, y, z, count = 8) {
     for (let i = 0; i < count; i++) {
       this.spawn(x, y, z, 0.35, 0.55, 0.9, {
@@ -115,7 +115,7 @@ export class ParticleSystem {
     }
   }
 
-  /** Rauch (z. B. Fackel, Verbrennen). */
+  /** Smoke (e.g. torches, burning). */
   smoke(x, y, z, count = 2) {
     for (let i = 0; i < count; i++) {
       this.spawn(
@@ -129,7 +129,7 @@ export class ParticleSystem {
     }
   }
 
-  /** Flammenpartikel. */
+  /** Flame particles. */
   flame(x, y, z, count = 2) {
     for (let i = 0; i < count; i++) {
       this.spawn(
@@ -143,7 +143,7 @@ export class ParticleSystem {
     }
   }
 
-  /** Herzen (Essen/Heilung). */
+  /** Hearts (eating/healing). */
   hearts(x, y, z, count = 5) {
     for (let i = 0; i < count; i++) {
       this.spawn(
@@ -157,7 +157,7 @@ export class ParticleSystem {
     }
   }
 
-  /** Blitz bei Treffer. */
+  /** Flash on impact. */
   hit(x, y, z, count = 6) {
     for (let i = 0; i < count; i++) {
       this.spawn(x, y, z, 1, 1, 1, {
@@ -166,12 +166,12 @@ export class ParticleSystem {
     }
   }
 
-  /** Update: Physik + Altern. */
+  /** Update: physics + aging. */
   update(dt) {
     for (let i = 0; i < this.count; i++) {
       this.life[i] -= dt;
       if (this.life[i] <= 0) {
-        // Mit letztem tauschen
+        // Swap with the last particle
         const last = this.count - 1;
         if (i !== last) {
           for (let k = 0; k < 3; k++) {
@@ -191,7 +191,7 @@ export class ParticleSystem {
       this.positions[i * 3] += this.velocities[i * 3] * dt;
       this.positions[i * 3 + 1] += this.velocities[i * 3 + 1] * dt;
       this.positions[i * 3 + 2] += this.velocities[i * 3 + 2] * dt;
-      // (kein kumulatives Fade – Partikel sterben ohnehin schnell)
+      // (no cumulative fade—particles are short-lived anyway)
     }
     this.geometry.setDrawRange(0, this.count);
     this.geometry.attributes.position.needsUpdate = true;

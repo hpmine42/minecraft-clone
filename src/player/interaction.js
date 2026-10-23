@@ -1,4 +1,4 @@
-// interaction.js — Blöcke abbauen/platzieren, Kampf, Essen, Farming.
+// interaction.js — Mine/place blocks, combat, eating, and farming.
 import { BLOCKS, BLOCK, TOOL, breakSpeed, getDrop, isPlaceable, RENDER } from '../world/blocks.js';
 import { ItemEntity } from '../entities/mobs.js';
 
@@ -38,32 +38,32 @@ export class Interaction {
   }
 
   /**
-   * Jeden Frame.
+   * Run every frame.
    * @param {number} dt
-   * @param {object} actions { attack: bool (gehalten), usePressed: bool, pickPressed: bool }
-   * @param {object} camera THREE-kompatible Kamera oder {position, getWorldDirection}
+   * @param {object} actions { attack: bool (held), usePressed: bool, pickPressed: bool }
+   * @param {object} camera THREE-compatible camera or {position, getWorldDirection}
    */
   update(dt, actions, camera) {
     this.placeCooldown = Math.max(0, this.placeCooldown - dt);
     this.swingTime = Math.max(0, this.swingTime - dt);
 
     const eye = this.player.eyePosition();
-    // Mobile Long-Presses können einen eigenen Bildschirm-Strahl übergeben;
-    // Maus/Attack-Button verwenden weiterhin das Fadenkreuz.
+    // Mobile long presses can provide their own screen ray;
+    // mouse/attack-button input continues to use the crosshair.
     const dir = actions.attackDirection || this.player.lookDir();
 
-    // Ziel: Mob zuerst
+    // Target mobs first
     const mobHit = this.mobs.raycastMob(eye, dir, 4.2);
     const blockHit = this.world.raycast(eye, dir, 5.2);
     const mobCloser = mobHit && (!blockHit || mobHit.distance < blockHit.distance);
 
-    // Essen laufend
+    // Continue eating
     if (this.eatTimer > 0) {
       this.eatTimer -= dt;
       if (this.eatTimer <= 0) this._finishEating();
     }
 
-    // ---- Angriff / Abbauen -------------------------------------------------
+    // ---- Attack / mining -------------------------------------------------
     if (actions.attack) {
       this.swingTime = 0.22;
       if (mobCloser) {
@@ -73,23 +73,23 @@ export class Interaction {
       } else if (blockHit) {
         this._breakBlock(dt, blockHit);
       } else {
-        // Kein Ziel im Blick: mit gehaltenem Angriff beim nächsten Treffer neu starten.
+        // No target in view: with attack held, restart on the next hit.
         this.breakTarget = null;
         this.breakProgress = 0;
       }
     } else {
-      // Fortschritt beim Loslassen immer zurücksetzen.
+      // Always reset progress when released.
       this.breakTarget = null;
       this.breakProgress = 0;
     }
 
-    // ---- Benutzen / Platzieren ---------------------------------------------
+    // ---- Use / place ---------------------------------------------
     if (actions.usePressed && this.placeCooldown <= 0) {
       this.swingTime = 0.22;
       this._useItem(blockHit);
     }
 
-    // ---- Mittlere Maustaste: Block kopieren --------------------------------
+    // ---- Middle mouse button: pick block --------------------------------
     if (actions.pickPressed && blockHit && this.player.gamemode === 'creative') {
       this.inventory.slots[this.inventory.selected] = {
         id: blockHit.id, count: 1, dur: null,
@@ -99,7 +99,7 @@ export class Interaction {
     return { blockHit, mobHit: mobCloser ? mobHit : null };
   }
 
-  /** Aktuellen Zielblock auf dem Blick- oder Mining-Strahl ermitteln. */
+  /** Find the current target block along the look or mining ray. */
   currentTarget(direction = this.player.lookDir()) {
     return this.world.raycast(this.player.eyePosition(), direction, 5.2);
   }
@@ -120,7 +120,7 @@ export class Interaction {
       mob.position.y + mob.height * 0.6,
       mob.position.z
     );
-    // Haltbarkeit
+    // Durability
     if (held && def && def.durability) {
       this.inventory.damageHeld(1);
     }
@@ -130,9 +130,9 @@ export class Interaction {
   _breakBlock(dt, hit) {
     const { x, y, z, id } = hit;
     const def = BLOCKS[id];
-    if (!def || def.hardness < 0) return; // unzerstörbar (Bedrock, Wasser)
+    if (!def || def.hardness < 0) return; // unbreakable (bedrock, water)
 
-    // Ziel gewechselt?
+    // Target changed?
     if (!this.breakTarget || this.breakTarget.x !== x || this.breakTarget.y !== y || this.breakTarget.z !== z) {
       this.breakTarget = { x, y, z, id };
       this.breakProgress = 0;
@@ -147,13 +147,13 @@ export class Interaction {
     if (creative) this.breakProgress = required;
     else this.breakProgress += dt * speed;
 
-    // Abbau-Partikel
+    // Mining particles
     if (Math.random() < dt * 18) {
       this.particles.blockBreak(x, y, z, id, 1);
     }
 
     if (this.breakProgress >= required) {
-      // Block abbauen; Funktionsblöcke können vorher ihre Inhalte droppen.
+      // Mine the block; functional blocks can drop their contents first.
       this.onBlockBreak?.(x, y, z, id);
       this.world.setBlock(x, y, z, BLOCK.AIR);
       this.particles.blockBreak(x, y, z, id, 14);
@@ -168,7 +168,7 @@ export class Interaction {
           this.mobs.items.push(item);
           this.mobs.scene.add(item.group);
         }
-        // Laub: Äpfel & Setzlinge
+        // Leaves: apples & saplings
         if (id === BLOCK.LEAVES || id === BLOCK.BIRCH_LEAVES || id === BLOCK.SPRUCE_LEAVES) {
           const r = Math.random();
           if (r < 0.07) {
@@ -181,14 +181,14 @@ export class Interaction {
             this.mobs.scene.add(item.group);
           }
         }
-        // Werkzeug abnutzen
+        // Wear out the tool
         if (held) {
           const hDef = BLOCKS[held.id];
           if (hDef && hDef.durability) this.inventory.damageHeld(1);
         }
       }
 
-      // Schwerkraft-Blöcke darüber? (Sand/Kies fallen lassen – vereinfacht: sofort nachziehen)
+      // Gravity blocks above? (Drop sand/gravel—simplified to immediate movement)
       this._applyGravity(x, y + 1, z);
 
       this.breakTarget = null;
@@ -201,7 +201,7 @@ export class Interaction {
     let ny = y;
     const def = BLOCKS[id];
     if (!def || !def.gravity) return;
-    // Nach unten fallen lassen, bis Blockunterlage
+    // Move downward until supported by a block
     while (ny > 0 && this.world.getBlock(x, ny - 1, z) === BLOCK.AIR) {
       ny--;
     }
@@ -217,12 +217,12 @@ export class Interaction {
     if (!held) return;
     const def = BLOCKS[held.id];
 
-    // ---- Essen ------------------------------------------------------------
+    // ---- Eating ------------------------------------------------------------
     if (def && def.food > 0) {
       if (player.gamemode === 'survival' && player.hunger < player.maxHunger) {
         this.eatTimer = 1.1;
         this.audio.eat();
-        // Sofortiger Effekt am Ende via _finishEating
+        // Apply the effect at the end via _finishEating
         this._pendingFood = def.food;
         this._pendingFoodId = held.id;
         this.placeCooldown = 1.15;
@@ -231,9 +231,9 @@ export class Interaction {
       return;
     }
 
-    // ---- Werkzeug-Spezialfunktionen --------------------------------------
+    // ---- Special tool functions --------------------------------------
     if (blockHit && def && def.tool === TOOL.HOE) {
-      // Hacke: Gras/Erde → Ackerboden
+      // Hoe: grass/dirt → farmland
       const below = blockHit;
       const aboveId = this.world.getBlock(below.x, below.y + 1, below.z);
       if ((below.id === BLOCK.GRASS || below.id === BLOCK.DIRT) && aboveId === BLOCK.AIR) {
@@ -256,7 +256,7 @@ export class Interaction {
     }
 
     if (blockHit && held.id === BLOCK.BONE_MEAL) {
-      // Knochenmehl: Pflanzen wachsen lassen
+      // Bone meal: grow plants
       const target = this.world.getBlock(blockHit.x, blockHit.y + 1, blockHit.z) === BLOCK.WHEAT
         ? { x: blockHit.x, y: blockHit.y + 1, z: blockHit.z }
         : (blockHit.id === BLOCK.WHEAT ? blockHit : null);
@@ -272,18 +272,18 @@ export class Interaction {
     }
 
     if (blockHit && held.id === BLOCK.APPLE && false) {
-      // (Apfel ist Essen – wird oben behandelt)
+      // (Apples are food—handled above)
     }
 
-    // ---- Block platzieren -------------------------------------------------
+    // ---- Place block -------------------------------------------------
     if (isPlaceable(held.id)) {
       let px, py, pz;
       if (blockHit) {
-        // Auf der angesehenen Face platzieren
+        // Place on the targeted face
         px = blockHit.x + blockHit.nx;
         py = blockHit.y + blockHit.ny;
         pz = blockHit.z + blockHit.nz;
-        // Bei Pflanzen: ersetzen statt daneben setzen
+        // For plants, replace instead of placing alongside
         const targetId = this.world.getBlock(blockHit.x, blockHit.y, blockHit.z);
         const targetDef = BLOCKS[targetId];
         if (targetDef && !targetDef.solid && targetDef.render === RENDER.CROSS && isPlaceable(held.id)) {
@@ -299,7 +299,7 @@ export class Interaction {
       const exDef = BLOCKS[existing];
       if (existing !== BLOCK.AIR && (!exDef || exDef.solid)) return;
 
-      // Kollision mit Spieler prüfen (bei soliden Blöcken)
+      // Check collision with the player (for solid blocks)
       const placeDef = BLOCKS[held.id];
       if (placeDef && placeDef.solid) {
         const w = 0.32;
@@ -311,7 +311,7 @@ export class Interaction {
         if (overlap) return;
       }
 
-      // Nur bei Kontakt mit einem Block platzieren
+      // Place only when adjacent to a block
       const touches =
         this.world.getBlock(px + 1, py, pz) !== BLOCK.AIR ||
         this.world.getBlock(px - 1, py, pz) !== BLOCK.AIR ||
@@ -336,7 +336,7 @@ export class Interaction {
       this.particles.hearts(this.player.position.x, this.player.position.y + 1, this.player.position.z, 4);
       this._pendingFood = 0;
     }
-    // Lebensmittel aus dem Inventar nehmen
+    // Take food from the inventory
     if (this._pendingFoodId != null) {
       if (this.player.gamemode !== 'creative') {
         this.inventory.consume(this._pendingFoodId, 1);
@@ -345,7 +345,7 @@ export class Interaction {
     }
   }
 
-  /** Abbaufortschritt 0..1 für HUD/Highlight. */
+  /** Mining progress from 0 to 1 for the HUD/highlight. */
   get breakFraction() {
     return Math.min(1, this.breakProgress);
   }

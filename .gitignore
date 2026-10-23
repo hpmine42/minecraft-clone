@@ -1,11 +1,11 @@
-# Abhängigkeiten & Artefakte
+# Dependencies & artifacts
 node_modules/
 npm-debug.log*
 
-# Build-Artefakte (GitHub Pages)
+# Build artifacts (GitHub Pages)
 _site/
 
-# Temporäre Dateien
+# Temporary files
 *.log
 .DS_Store
 tmp/

@@ -1,4 +1,4 @@
-// engine.js — Renderer, Szene, Himmel, Tag/Nacht, Wolken, Regen, Nebel.
+// engine.js — Renderer, scene, sky, day/night, clouds, rain, and fog.
 import * as THREE from '../../lib/three.module.js';
 import { createWaterTexture, createLavaTexture } from '../world/textures.js';
 
@@ -40,11 +40,11 @@ export class Engine {
     this.camera = new THREE.PerspectiveCamera(opts.fov ?? 75, window.innerWidth / window.innerHeight, 0.1, 600);
     this.baseFov = opts.fov ?? 75;
 
-    // Nebel
+    // Fog
     this.fogColor = new THREE.Color(0x87ceeb);
     this.scene.fog = new THREE.Fog(this.fogColor, 40, 160);
 
-    // ---- Himmel (Gradient-Dome) -------------------------------------------
+    // ---- Sky (gradient dome) -------------------------------------------
     this.skyUniforms = {
       topColor: { value: new THREE.Color(0x3a7bd5) },
       bottomColor: { value: new THREE.Color(0x10182b) },
@@ -70,8 +70,8 @@ export class Engine {
         uniform vec3 horizonColor;
         varying vec3 vWorldPosition;
         void main() {
-          // Direction relativ zur Kamera: Der Himmel bleibt stabil, auch wenn
-          // der Spieler weit vom Weltursprung entfernt ist.
+          // Direction relative to the camera: the sky remains stable even when
+          // the player is far from the world origin.
           float h = normalize(vWorldPosition - cameraPosition).y;
           float upper = smoothstep(-0.04, 0.64, h);
           vec3 skyColor = mix(horizonColor, topColor, upper);
@@ -89,7 +89,7 @@ export class Engine {
     this.sky.frustumCulled = false;
     this.scene.add(this.sky);
 
-    // ---- Sonne & Mond (mit Glühen, prozedurale Texturen) --------------------
+    // ---- Sun & moon (with glow and procedural textures) --------------------
     this.sun = new THREE.Mesh(
       new THREE.PlaneGeometry(70, 70),
       new THREE.MeshBasicMaterial({
@@ -106,7 +106,7 @@ export class Engine {
     );
     this.scene.add(this.sun, this.moon);
 
-    // ---- Sterne ------------------------------------------------------------
+    // ---- Stars ------------------------------------------------------------
     {
       const starCount = 700;
       const positions = new Float32Array(starCount * 3);
@@ -131,7 +131,7 @@ export class Engine {
       this.scene.add(this.stars);
     }
 
-    // ---- Wolken ------------------------------------------------------------
+    // ---- Clouds ------------------------------------------------------------
     this.cloudTexture = this._makeCloudTexture();
     this.cloudMaterial = new THREE.MeshBasicMaterial({
       map: this.cloudTexture,
@@ -146,13 +146,13 @@ export class Engine {
     this.clouds.position.y = 112;
     this.scene.add(this.clouds);
 
-    // ---- Licht (für Lambert-Materialien: Mobs/Items) ------------------------
+    // ---- Lighting (for Lambert materials: mobs/items) ------------------------
     this.hemiLight = new THREE.HemisphereLight(0xbfd8ff, 0x6b6b52, 0.9);
     this.dirLight = new THREE.DirectionalLight(0xfff2d5, 0.85);
     this.dirLight.position.set(60, 120, 40);
     this.scene.add(this.hemiLight, this.dirLight);
 
-    // ---- Wasser/Lava-Textur (animiert) ------------------------------------
+    // ---- Water/lava texture (animated) ------------------------------------
     this.waterCanvas = createWaterTexture();
     this.waterTexture = new THREE.CanvasTexture(this.waterCanvas);
     this.waterTexture.magFilter = THREE.NearestFilter;
@@ -169,13 +169,13 @@ export class Engine {
     this.lavaTexture.wrapT = THREE.RepeatWrapping;
     this.lavaTexture.colorSpace = THREE.SRGBColorSpace;
 
-    // ---- Regen -------------------------------------------------------------
+    // ---- Rain -------------------------------------------------------------
     this.rainIntensity = 0;
     this._rainPoints = null;
     this._buildRain();
 
     // State
-    this.timeOfDay = 0.25;  // 0 = Sonnenaufgang, 0.25 = Mittag, 0.5 = Sonnenuntergang, 0.75 = Mitternacht
+    this.timeOfDay = 0.25;  // 0 = sunrise, 0.25 = noon, 0.5 = sunset, 0.75 = midnight
     this.underwater = false;
     this._animTime = 0;
     this.dayFactor = 1;
@@ -191,7 +191,7 @@ export class Engine {
     this.resize();
   }
 
-  /** Prozedurale Sonnentextur: Kern + weicher Halo. */
+  /** Procedural sun texture: core + soft halo. */
   _makeSunTexture() {
     const s = 128;
     const canvas = document.createElement('canvas');
@@ -207,7 +207,7 @@ export class Engine {
     return new THREE.CanvasTexture(canvas);
   }
 
-  /** Prozedurale Mondtextur: heller Kern + Krater + Halo. */
+  /** Procedural moon texture: bright core + craters + halo. */
   _makeMoonTexture() {
     const s = 128;
     const canvas = document.createElement('canvas');
@@ -220,7 +220,7 @@ export class Engine {
     glow.addColorStop(1, 'rgba(160, 180, 240, 0)');
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, s, s);
-    // Krater
+    // Craters
     ctx.fillStyle = 'rgba(150, 165, 210, 0.45)';
     for (const [cx, cy, r] of [[52, 50, 9], [72, 68, 6], [58, 82, 5], [78, 46, 4]]) {
       ctx.beginPath();
@@ -230,7 +230,7 @@ export class Engine {
     return new THREE.CanvasTexture(canvas);
   }
 
-  /** Prozedurale Wolken-Textur: harte Wölkchen-Kacheln statt Weichzeichner-Schleier. */
+  /** Procedural cloud texture: crisp cloud tiles instead of a blurred veil. */
   _makeCloudTexture() {
     const size = 256;
     const canvas = document.createElement('canvas');
@@ -238,7 +238,7 @@ export class Engine {
     canvas.height = size;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, size, size);
-    // Deterministische Wolkencluster aus harten Rechteck-Segmenten (Minecraft-Stil)
+    // Deterministic cloud clusters made of crisp rectangular segments (Minecraft style)
     let seed = 777;
     const rand = () => {
       seed = (seed * 1664525 + 1013904223) >>> 0;
@@ -260,7 +260,7 @@ export class Engine {
         const oy = (rand() - 0.5) * cl.ry * 1.3;
         const w = Math.round(cl.rx * (0.35 + rand() * 0.55));
         const h = Math.round(cl.ry * (0.4 + rand() * 0.6));
-        // Nahtlos kachelbar, auch an den Ecken
+        // Seamlessly tileable, including at the corners
         for (const dx of [-size, 0, size]) {
           for (const dy of [-size, 0, size]) {
             ctx.fillRect(Math.round(cl.x + ox - w / 2 + dx), Math.round(cl.y + oy - h / 2 + dy), w, h);
@@ -311,7 +311,7 @@ export class Engine {
     this.camera.updateProjectionMatrix();
   }
 
-  /** Sanfter FOV-Kick beim Sprinten. */
+  /** Smooth FOV kick while sprinting. */
   updateFov(sprinting, dt) {
     const target = sprinting ? this.baseFov + 8 : this.baseFov;
     if (Math.abs(this.camera.fov - target) > 0.1) {
@@ -320,7 +320,7 @@ export class Engine {
     }
   }
 
-  /** Farben interpolieren. */
+  /** Interpolate colors. */
   static lerpColor(out, a, b, t) {
     out.r = a.r + (b.r - a.r) * t;
     out.g = a.g + (b.g - a.g) * t;
@@ -329,7 +329,7 @@ export class Engine {
   }
 
   /**
-   * Terrain-Material registrieren, das nachts abgedunkelt wird.
+   * Register a terrain material to darken at night.
    * @param {THREE.Material} mat
    */
   registerTintable(mat) {
@@ -338,26 +338,26 @@ export class Engine {
   }
 
   /**
-   * Himmel & Beleuchtung an Tageszeit anpassen.
+   * Adjust sky and lighting for the time of day.
    * @param {number} timeOfDay 0..1
-   * @param {number} renderDistance aktuelle Sichtweite (Chunks) für Nebel
+   * @param {number} renderDistance current view distance (chunks) for fog
    */
   updateSky(timeOfDay, renderDistance, dt, raining) {
     this.timeOfDay = timeOfDay;
     this._animTime += dt;
 
     const t = timeOfDay;
-    // Zyklus: 0 = Aufgang, 0.25 = Mittag, 0.5 = Untergang, 0.75 = Mitternacht
+    // Cycle: 0 = sunrise, 0.25 = noon, 0.5 = sunset, 0.75 = midnight
     const sunAngle = t * Math.PI * 2 - Math.PI / 2;
     const sunY = Math.cos(sunAngle);
     const sunX = Math.sin(sunAngle);
 
-    const dayFactor = Math.max(0, Math.min(1, (sunY + 0.18) / 0.5)); // 0 = Nacht, 1 = Tag
-    const duskFactor = Math.max(0, 1 - Math.abs(sunY) * 2.4);        // breite Dämmerungs-Phase
+    const dayFactor = Math.max(0, Math.min(1, (sunY + 0.18) / 0.5)); // 0 = night, 1 = day
+    const duskFactor = Math.max(0, 1 - Math.abs(sunY) * 2.4);        // broad twilight phase
     this.dayFactor = dayFactor;
 
-    // Himmelsfarben: satter Zenit, weiche Horizontfarbe, getrennte Dämmerung.
-    // Scratch-Color-Objekte vermeiden Speicherallokationen im mobilen Frame-Loop.
+    // Sky colors: rich zenith, soft horizon, and separate twilight colors.
+    // Scratch color objects avoid allocations in the mobile frame loop.
     const { top, bottom, horizon, cloud } = this._skyScratch;
     Engine.lerpColor(top, SKY_PALETTE.nightTop, SKY_PALETTE.dayTop, dayFactor);
     Engine.lerpColor(bottom, SKY_PALETTE.nightBottom, SKY_PALETTE.dayBottom, dayFactor);
@@ -376,7 +376,7 @@ export class Engine {
     this.skyUniforms.bottomColor.value.copy(bottom);
     this.skyUniforms.horizonColor.value.copy(horizon);
 
-    // Nebel geht weich in die Horizontfarbe über – kein grauer Farbbruch.
+    // Blend fog smoothly into the horizon color without a gray color break.
     this.fogColor.copy(horizon).lerp(top, 0.16);
     if (this.underwater) {
       this.fogColor.set(0x1a4a8c);
@@ -388,7 +388,7 @@ export class Engine {
       this.scene.fog.far = Math.max(60, dist * 1.15);
     }
 
-    // Himmelobjekte folgen der Kamera, damit der Himmel in der Unendlichwelt stabil bleibt.
+    // Sky objects follow the camera so the sky remains stable in the infinite world.
     const camPos = this.camera.position;
     this.stars.position.copy(camPos);
     const skyR = 320;
@@ -401,7 +401,7 @@ export class Engine {
     this.moon.material.opacity = Math.min(1, 1 - dayFactor + 0.15);
     this.starMaterial.opacity = Math.max(0, 1 - dayFactor * 1.6) * 0.95;
 
-    // Wolken bewegen (Textur-Scroll statt Positions-Sprung – kein sichtbarer Kantensprung)
+    // Move clouds by scrolling the texture instead of jumping positions (no visible edge jump)
     this.clouds.position.x = camPos.x;
     this.clouds.position.z = camPos.z;
     this.cloudTexture.offset.x = (this._animTime * 0.0016) % 1;
@@ -412,27 +412,27 @@ export class Engine {
     if (raining > 0) cloud.lerp(SKY_PALETTE.cloudRain, raining * 0.6);
     this.cloudMaterial.color.copy(cloud);
 
-    // Nacht-Dunkelung der Terrain-Materialien (Basic-Materialien brauchen
-    // einen expliziten Tageszeit-Farbmultiplikator).
+    // Night darkening for terrain materials (basic materials need
+    // an explicit time-of-day color multiplier).
     const night = 1 - dayFactor;
     for (const m of this._tintables) {
       m.color.setRGB(1 - night * 0.62, 1 - night * 0.58, 1 - night * 0.38);
     }
 
-    // Lichtfarben
+    // Light colors
     this.hemiLight.intensity = 0.25 + dayFactor * 0.85;
     this.dirLight.intensity = 0.15 + dayFactor * 0.9;
     this.dirLight.position.set(camPos.x + sunX * 80, camPos.y + Math.max(10, sunY * 120), camPos.z + 30);
     this.dirLight.color.setHex(duskFactor > 0.2 ? 0xffb070 : 0xfff2d5);
 
-    // Wasser/Lava animieren (4 Frames)
+    // Animate water/lava (4 frames)
     const frame = Math.floor(this._animTime * 3.2) % 4;
     this.waterTexture.offset.x = frame / 4;
     this.waterTexture.repeat.set(1 / 4, 1);
     this.lavaTexture.offset.x = frame / 4;
     this.lavaTexture.repeat.set(1 / 4, 1);
 
-    // Regen
+    // Rain
     if (this._rainPoints) {
       const targetOpacity = raining > 0 ? 0.5 * raining : 0;
       this._rainMaterial.opacity += (targetOpacity - this._rainMaterial.opacity) * Math.min(1, dt * 2);
@@ -452,7 +452,7 @@ export class Engine {
     }
   }
 
-  /** Gibt true wenn es taghell ist (für Mobs etc.). */
+  /** Return true during daylight (for mobs, etc.). */
   isDay() {
     const sunY = Math.sin(this.timeOfDay * Math.PI * 2);
     return sunY > -0.12;

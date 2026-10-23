@@ -1,8 +1,8 @@
-// mobile-boot.test.mjs — Spielstart im „Handy-Modus": Touch-Erkennung, TouchControls,
-// Joystick-Input im echten Spiel, Mobile-UI-Elemente.
+// mobile-boot.test.mjs — Game startup in “phone mode”: touch detection, TouchControls,
+// joystick input in the real game, and mobile UI elements.
 import { BLOCK } from '../src/world/blocks.js';
 
-// ---- DOM-Stubs mit Listener-Capture ---------------------------------------
+// ---- DOM stubs with listener capture ---------------------------------------
 function makeEl(id) {
   const listeners = {};
   return {
@@ -113,7 +113,7 @@ const elById = (id) => {
   return elementsById.get(id);
 };
 
-// ---- Handy-Umgebung --------------------------------------------------------
+// ---- Phone environment --------------------------------------------------------
 Object.defineProperty(globalThis, 'navigator', {
   value: { maxTouchPoints: 5, userAgent: 'MobileBootTest', platform: 'iPhone' },
   configurable: true,
@@ -126,7 +126,7 @@ globalThis.window = {
     if (type === 'DOMContentLoaded') this._domReady = fn;
   },
   removeEventListener() {},
-  // Handy: Touch + Pointer Events wie in modernen mobilen Browsern.
+  // Phone: touch + pointer events as in modern mobile browsers.
   PointerEvent: class PointerEvent {},
   matchMedia: () => ({ matches: true, addListener() {} }),
   AudioContext: class {
@@ -173,7 +173,7 @@ globalThis.requestAnimationFrame = (fn) => {
 };
 globalThis.cancelAnimationFrame = (id) => clearTimeout(id);
 
-// ---- Spiel starten ---------------------------------------------------------
+// ---- Start game ---------------------------------------------------------
 await import('../src/main.js');
 const game = globalThis.window.__game;
 if (globalThis.window._domReady) globalThis.window._domReady();
@@ -187,24 +187,24 @@ const ok = (cond, msg) => {
   else { failed++; console.error(`✘ ${msg}`); }
 };
 
-ok(game.isTouch === true, 'Touch-Modus erkannt (Handy)');
-ok(!!game.touch, 'TouchControls initialisiert');
-ok(elById('mobile-controls').style.display === 'block', 'Mobile Steuerung eingeblendet');
-ok(game.settings.renderDistance <= 4, `Handy-Renderdistanz kompakt (${game.settings.renderDistance})`);
+ok(game.isTouch === true, 'Touch mode detected (phone)');
+ok(!!game.touch, 'TouchControls initialized');
+ok(elById('mobile-controls').style.display === 'block', 'Mobile controls visible');
+ok(game.settings.renderDistance <= 4, `Compact phone render distance (${game.settings.renderDistance})`);
 
-// Welt starten
+// Start world
 elById('seed-input').value = '42';
 elById('world-type').value = 'normal';
 elById('game-mode').value = 'creative';
 elById('peaceful-mode').checked = true;
 game.startNewWorld();
 await new Promise((r) => setTimeout(r, 800));
-ok(game.state === 'playing', `Spiel läuft (${game.state})`);
-ok(game.world.chunks.size > 0, `Welt da (${game.world.chunks.size} Chunks)`);
+ok(game.state === 'playing', `Game running (${game.state})`);
+ok(game.world.chunks.size > 0, `World available (${game.world.chunks.size} chunks)`);
 ok(game.particles.quality === 'low' && game.particles.maxParticles === 180,
-  'Mobile Standardqualität begrenzt Partikel ohne die Effekte abzuschalten');
+  'Default mobile quality limits particles without disabling effects');
 
-// Joystick bewegen → Spieler läuft
+// Move joystick → player walks
 const makeEvent = (touches) => ({ preventDefault() {}, stopPropagation() {}, changedTouches: touches, touches });
 const makePointerEvent = (pointerId, clientX, clientY) => ({
   pointerId, pointerType: 'touch', isPrimary: true, clientX, clientY,
@@ -217,37 +217,37 @@ joyZone.dispatch('touchmove', makeEvent([{ identifier: 1, clientX: 80, clientY: 
 await new Promise((r) => setTimeout(r, 500));
 joyZone.dispatch('touchend', makeEvent([{ identifier: 1, clientX: 80, clientY: 500 }]));
 const moved = Math.hypot(game.player.position.x - startPos.x, game.player.position.z - startPos.z);
-ok(moved > 0.5, `Joystick bewegt Spieler (${moved.toFixed(2)} Blöcke)`);
+ok(moved > 0.5, `Joystick moves player (${moved.toFixed(2)} blocks)`);
 
-// Blick per Wischen drehen
+// Rotate view by swiping
 const lookZone = elById('look-zone');
 const yawBefore = game.player.yaw;
 lookZone.dispatch('touchstart', makeEvent([{ identifier: 2, clientX: 300, clientY: 100 }]));
 lookZone.dispatch('touchmove', makeEvent([{ identifier: 2, clientX: 360, clientY: 100 }]));
 await new Promise((r) => setTimeout(r, 60));
-ok(Math.abs(game.player.yaw - yawBefore) > 0.01, `Blick per Wischen gedreht (Δ=${(game.player.yaw - yawBefore).toFixed(3)})`);
+ok(Math.abs(game.player.yaw - yawBefore) > 0.01, `View rotated by swiping (Δ=${(game.player.yaw - yawBefore).toFixed(3)})`);
 lookZone.dispatch('touchend', makeEvent([{ identifier: 2, clientX: 360, clientY: 100 }]));
 
-// Springen-Button
+// Jump button
 const jumpBtn = elById('btn-jump');
 const yBefore = game.player.position.y;
 jumpBtn.dispatch('touchstart', makeEvent([{ identifier: 3, clientX: 10, clientY: 10 }]));
 await new Promise((r) => setTimeout(r, 120));
 jumpBtn.dispatch('touchend', makeEvent([{ identifier: 3, clientX: 10, clientY: 10 }]));
-ok(game.player.position.y > yBefore + 0.1, `Sprung-Button hebt Spieler (+${(game.player.position.y - yBefore).toFixed(2)})`);
+ok(game.player.position.y > yBefore + 0.1, `Jump button lifts player (+${(game.player.position.y - yBefore).toFixed(2)})`);
 
-// Doppelsprung → Fliegen (Kreativ) – erst Abstand zum vorherigen Tap
+// Double jump → flight (Creative)—first allow time since the previous tap
 await new Promise((r) => setTimeout(r, 450));
 jumpBtn.dispatch('touchstart', makeEvent([{ identifier: 4, clientX: 10, clientY: 10 }]));
 jumpBtn.dispatch('touchend', makeEvent([{ identifier: 4, clientX: 10, clientY: 10 }]));
 await new Promise((r) => setTimeout(r, 30));
 jumpBtn.dispatch('touchstart', makeEvent([{ identifier: 5, clientX: 10, clientY: 10 }]));
-ok(game.player.flying === true, 'Doppelsprung schaltet Fliegen an');
+ok(game.player.flying === true, 'Double jump enables flight');
 jumpBtn.dispatch('touchend', makeEvent([{ identifier: 5, clientX: 10, clientY: 10 }]));
-game.player.flying = true; // Im Kreativflug bleibt die Testposition stabil.
+game.player.flying = true; // Keep the test position stable during Creative flight.
 game.player.velocity.x = game.player.velocity.y = game.player.velocity.z = 0;
 
-// Platzieren-Button (Block in der Welt)
+// Place button (block in the world)
 const placeBtn = elById('btn-place');
 game.player.pitch = -0.9;
 game.inventory.selected = 0;
@@ -255,10 +255,10 @@ game.inventory.slots[0] = { id: BLOCK.COBBLESTONE, count: 64, dur: null };
 placeBtn.dispatch('touchstart', makeEvent([{ identifier: 6, clientX: 10, clientY: 10 }]));
 placeBtn.dispatch('touchend', makeEvent([{ identifier: 6, clientX: 10, clientY: 10 }]));
 await new Promise((r) => setTimeout(r, 60));
-ok(true, 'Platzieren-Button ohne Fehler');
+ok(true, 'Place button works without errors');
 
-// Mobile Pocket-Edition-Stil: ruhiger Long-Press auf eine Pflanze baut sie ab
-// (Touchposition wird auf einen Bildschirm-Strahl projiziert, nicht nur aufs Fadenkreuz).
+// Mobile Pocket Edition style: a steady long press on a plant mines it
+// (the touch position is projected to a screen ray, not just the crosshair).
 game.player.yaw = 0;
 game.player.pitch = 0;
 const eye = game.player.eyePosition();
@@ -268,12 +268,12 @@ const targetBlock = {
   z: Math.floor(game.player.position.z) - 3,
 };
 game.world.setBlock(targetBlock.x, targetBlock.y, targetBlock.z, BLOCK.DIRT);
-// Survival bricht schrittweise ab; der folgende Test prüft deshalb auch die Riss-Kontur.
+// Survival mines progressively; the following test therefore also checks the crack outline.
 game.player.gamemode = 'survival';
 const directRay = game.world.raycast(eye, game.player.lookDir(), 5.2);
-ok(directRay?.id === BLOCK.DIRT, 'Testblock liegt im Blickfeld');
+ok(directRay?.id === BLOCK.DIRT, 'Test block is in view');
 const raycastMob = game.mobs.raycastMob;
-game.mobs.raycastMob = () => null; // deterministisch auf den Block fokussieren
+game.mobs.raycastMob = () => null; // focus deterministically on the block
 const interactionUpdate = game.interaction.update.bind(game.interaction);
 const outlineUpdate = game.blockOutline.update.bind(game.blockOutline);
 let mineFrames = 0;
@@ -294,19 +294,19 @@ lookZone.dispatch('touchend', makeEvent([{ identifier: 12, clientX: 195, clientY
 game.mobs.raycastMob = raycastMob;
 game.interaction.update = interactionUpdate;
 game.blockOutline.update = outlineUpdate;
-ok(mineFrames > 0, 'Mobile-Long-Press wird im Spiel als gehaltener Abbau verarbeitet');
-ok(outlineShownWhileMining, 'Zielkontur bleibt beim mobilen Long-Press auf dem Block sichtbar');
+ok(mineFrames > 0, 'Mobile long press is processed as held mining in-game');
+ok(outlineShownWhileMining, 'Target outline stays visible on the block during mobile long press');
 ok(game.world.getBlock(targetBlock.x, targetBlock.y, targetBlock.z) === BLOCK.AIR,
-  'Gedrückthalten auf dem Block baut ihn direkt ab');
+  'Holding on the block mines it directly');
 game.player.gamemode = 'creative';
 
-// Inventar-Button öffnet Inventar
+// Inventory button opens inventory
 const invBtn = elById('btn-inventory');
 invBtn.dispatch('touchstart', makeEvent([{ identifier: 7, clientX: 10, clientY: 10 }]));
-ok(game.state === 'inventory', 'Inventar-Button öffnet Inventar');
+ok(game.state === 'inventory', 'Inventory button opens inventory');
 ok(game.menus.craftingMode === 'player' && game.menus.craftGrid.length === 4
   && game.menus.craftSlotEls[4].el.style.display === 'none',
-'Spielerinventar zeigt exakt vier 2×2-Crafting-Slots');
+'Player inventory shows exactly four 2×2 crafting slots');
 let inventoryWorldTicks = 0;
 const playingUpdate = game._updatePlaying;
 game._updatePlaying = function (dt) {
@@ -315,34 +315,34 @@ game._updatePlaying = function (dt) {
 };
 await new Promise((r) => setTimeout(r, 40));
 game._updatePlaying = playingUpdate;
-ok(inventoryWorldTicks > 0, 'Welt, Spielerphysik und Mobs laufen auch bei offenem Inventar weiter');
+ok(inventoryWorldTicks > 0, 'World, player physics, and mobs continue while the inventory is open');
 ok(game.menus.transferControls.parentElement === game.menus.els['inventory-body']
   && game.menus.els['inventory-body'].children[0] === game.menus.transferControls,
-  'Einzel-Item-Schalter sitzt sichtbar am Anfang des Inventars');
+  'Single-item toggle is visibly placed at the top of the inventory');
 ok(game.menus.recipeListEl.style.display === 'none',
-'Rezeptliste ist mobil zunächst eingeklappt, damit das Inventar ohne Scrollen passt');
+'Recipe list starts collapsed on mobile so the inventory fits without scrolling');
 game.menus.recipeBookToggle.dispatch('click', makeEvent([]));
 const recipeBookExpanded = game.menus.recipeListEl.style.display !== 'none';
 game.menus.recipeBookToggle.dispatch('click', makeEvent([]));
 ok(recipeBookExpanded && game.menus.recipeListEl.style.display === 'none',
-'Rezeptbuch lässt sich bei Bedarf öffnen und wieder platzsparend schließen');
+'Recipe book can be opened when needed and closed again to save space');
 
-// Item mit einem Finger aus dem Inventar direkt ins 2×2-Spielercraftingfeld ziehen.
+// Drag an item with one finger from the inventory directly into the 2×2 player crafting grid.
 game.inventory.slots[9] = { id: BLOCK.LOG, count: 1, dur: null };
 game.menus.refreshInventory();
 const logSlot = game.menus.invSlotEls.find((slot) => slot.index === 9);
 const craftTarget = game.menus.craftSlotEls[0];
 logSlot.el.dispatch('pointerdown', makePointerEvent(20, 100, 300));
-ok(logSlot.el.capturedPointerId === 20, 'Mobile Crafting-Drag übernimmt den Pointer bis zum Loslassen');
-document._pointElement = craftTarget.canvas; // Browser elementFromPoint trifft meist das Slot-Icon.
+ok(logSlot.el.capturedPointerId === 20, 'Mobile crafting drag captures the pointer until release');
+document._pointElement = craftTarget.canvas; // Browser elementFromPoint usually hits the slot icon.
 document.dispatch('pointermove', makePointerEvent(20, 180, 380));
 document.dispatch('pointerup', makePointerEvent(20, 180, 380));
 ok(game.inventory.slots[9] === null && game.menus.craftGrid[0]?.id === BLOCK.LOG && game.menus.heldStack === null,
-  'Mobiles Drag-and-Drop verschiebt den Gegenstand ohne Duplikat ins Craftingfeld');
+  'Mobile drag-and-drop moves the item into the crafting grid without duplication');
 ok(game.menus.resultSlotEl.stack?.id === BLOCK.PLANKS,
-  'Crafting-Ergebnis wird nach dem mobilen Ablegen aktualisiert');
+  'Crafting result updates after mobile placement');
 
-// Die bisherige Zwei-Tap-Bedienung bleibt neben Drag-and-Drop verfügbar.
+// The previous two-tap controls remain available alongside drag-and-drop.
 game.inventory.slots[10] = { id: BLOCK.COBBLESTONE, count: 2, dur: null };
 game.menus.refreshInventory();
 const cobbleSlot = game.menus.invSlotEls.find((slot) => slot.index === 10);
@@ -353,37 +353,37 @@ game.menus.craftSlotEls[0].el.dispatch('pointerdown', makePointerEvent(22, 150, 
 document._pointElement = game.menus.craftSlotEls[0].el;
 document.dispatch('pointerup', makePointerEvent(22, 150, 350));
 ok(game.menus.craftGrid[0]?.id === BLOCK.COBBLESTONE,
-  'Inventar-Items lassen sich weiterhin per Antippen und erneutem Antippen ablegen');
+  'Inventory items can still be placed by tapping and tapping again');
 game.menus._returnCraftGrid();
 game.menus._dropHeld();
 
-// Einzeltransfer-Modus: Slot auswählen, dann pro Crafting-Tipp genau ein Item einlegen.
+// Single-transfer mode: select a slot, then insert exactly one item per crafting tap.
 game.inventory.slots[11] = { id: BLOCK.LOG, count: 2, dur: null };
 game.menus.refreshInventory();
 const transferButton = game.menus.singleTransferButton;
 transferButton.dispatch('touchend', makeEvent([{ identifier: 30, clientX: 20, clientY: 20 }]));
-ok(game.menus.singleTransferMode, 'Einzeltransfer-Button aktiviert den Einlege-Modus');
+ok(game.menus.singleTransferMode, 'Single-transfer button enables insert mode');
 const transferSource = game.menus.invSlotEls.find((slot) => slot.index === 11);
 transferSource.el.dispatch('pointerdown', makePointerEvent(31, 110, 300));
 document.dispatch('pointerup', makePointerEvent(31, 110, 300));
 ok(game.menus.transferSourceIndex === 11 && game.menus.heldStack === null,
-  'Inventar-Slot wird ausgewählt, ohne den ganzen Stapel aufzunehmen');
+  'Inventory slot is selected without picking up the whole stack');
 const transferTarget = game.menus.craftSlotEls[3];
 transferTarget.el.dispatch('pointerdown', makePointerEvent(32, 150, 350));
 document.dispatch('pointerup', makePointerEvent(32, 150, 350));
 ok(game.inventory.slots[11]?.count === 1 && game.menus.craftGrid[3]?.count === 1 && game.menus.heldStack === null,
-  'Erster Tipp legt genau ein Item ein und lässt den restlichen Stapel im Inventar');
+  'First tap inserts exactly one item and leaves the rest of the stack in the inventory');
 ok(game.menus.resultSlotEl.stack?.id === BLOCK.PLANKS,
-  'Einzeltransfer aktualisiert sofort das Crafting-Ergebnis');
+  'Single transfer updates the crafting result immediately');
 transferTarget.el.dispatch('pointerdown', makePointerEvent(33, 150, 350));
 document.dispatch('pointerup', makePointerEvent(33, 150, 350));
 ok(game.inventory.slots[11] === null && game.menus.craftGrid[3]?.count === 2,
-  'Weiteres Tippen legt jeweils nur ein zusätzliches Item ein');
+  'Each further tap inserts only one additional item');
 transferButton.dispatch('touchend', makeEvent([{ identifier: 34, clientX: 20, clientY: 20 }]));
-ok(!game.menus.singleTransferMode, 'Einzeltransfer lässt sich wieder ausschalten');
+ok(!game.menus.singleTransferMode, 'Single transfer can be switched off again');
 game.menus._returnCraftGrid();
 
-// Mehrteilige Rezepte lassen sich durch getrennte Tipps auf die passenden Felder einsetzen.
+// Multi-part recipes can be filled through separate taps on the appropriate slots.
 game.inventory.slots[12] = { id: BLOCK.PLANKS, count: 2, dur: null };
 game.menus.refreshInventory();
 transferButton.dispatch('touchend', makeEvent([{ identifier: 35, clientX: 20, clientY: 20 }]));
@@ -395,27 +395,27 @@ document.dispatch('pointerup', makePointerEvent(37, 150, 350));
 game.menus.craftSlotEls[2].el.dispatch('pointerdown', makePointerEvent(38, 150, 350));
 document.dispatch('pointerup', makePointerEvent(38, 150, 350));
 ok(game.inventory.slots[12] === null && game.menus.craftGrid[0]?.id === BLOCK.PLANKS && game.menus.craftGrid[2]?.id === BLOCK.PLANKS,
-  'Zwei einzelne Zutaten landen auf zwei Crafting-Feldern');
+  'Two individual ingredients land in two crafting slots');
 ok(game.menus.resultSlotEl.stack?.id === BLOCK.STICK,
-  'Einzeltransfer erlaubt auch mehrteilige Rezepte wie Stöcke');
+  'Single transfer also supports multi-part recipes such as sticks');
 transferButton.dispatch('touchend', makeEvent([{ identifier: 39, clientX: 20, clientY: 20 }]));
 game.menus._returnCraftGrid();
 
 document._pointElement = null;
 invBtn.dispatch('touchstart', makeEvent([{ identifier: 8, clientX: 10, clientY: 10 }]));
-ok(game.state === 'playing', 'Inventar-Button schließt Inventar');
+ok(game.state === 'playing', 'Inventory button closes inventory');
 game.openWorkbenchInventory();
 ok(game.state === 'inventory' && game.menus.craftingMode === 'workbench'
   && game.menus.craftGrid.length === 9 && game.menus.craftSlotEls[4].el.style.display !== 'none',
-'Werkbank-Inventar bietet weiterhin ein sichtbares 3×3-Craftingfeld');
+'Crafting-table inventory still provides a visible 3×3 crafting grid');
 game.closeInventory();
 
-// Ofen und Truhe haben eigene, auch per Touch bedienbare Container-Slots.
+// Furnace and chest have their own touch-accessible container slots.
 game.inventory.slots[13] = { id: BLOCK.BEEF, count: 2, dur: null };
 game.inventory.slots[14] = { id: BLOCK.COAL, count: 1, dur: null };
 game.openFurnace({ x: 1, y: 2, z: 3 });
-ok(game.state === 'inventory' && game.menus.inventoryTitle.textContent === 'Schmelzofen',
-  'Ofenblock öffnet eine eigene Schmelzoberfläche');
+ok(game.state === 'inventory' && game.menus.inventoryTitle.textContent === 'Furnace',
+  'Furnace block opens a dedicated smelting interface');
 const beefSlot = game.menus.invSlotEls.find((slot) => slot.index === 13);
 beefSlot.el.dispatch('pointerdown', makePointerEvent(40, 110, 300));
 document._pointElement = game.menus.furnaceSlotEls[0].canvas;
@@ -425,73 +425,73 @@ game.menus._slotClick('inv', 14);
 game.menus._slotClick('container', 1);
 ok(game.world.furnaces.get('1,2,3').slots[0]?.id === BLOCK.BEEF
   && game.world.furnaces.get('1,2,3').slots[1]?.id === BLOCK.COAL,
-'Rohstoff und Brennstoff lassen sich in den Ofen legen');
+'Ingredient and fuel can be placed in the furnace');
 game._tickFurnaces(5);
 ok(game.world.furnaces.get('1,2,3').slots[2]?.id === BLOCK.COOKED_BEEF
   && game.world.furnaces.get('1,2,3').slots[0]?.count === 1,
-'Ofen schmilzt rohes Fleisch zu gegartem Fleisch');
+'Furnace smelts raw beef into cooked beef');
 game.menus._slotClick('container', 2);
 game.menus._slotClick('inv', 15);
 game.closeInventory();
 
 game.openChest({ x: 4, y: 2, z: 3 });
-ok(game.state === 'inventory' && game.menus.inventoryTitle.textContent === 'Truhe',
-  'Truhe öffnet eine eigene Speicheroberfläche');
+ok(game.state === 'inventory' && game.menus.inventoryTitle.textContent === 'Chest',
+  'Chest opens a dedicated storage interface');
 game.menus._slotClick('inv', 15);
 game.menus._slotClick('container', 0);
 ok(game.world.chests.get('4,2,3').slots[0]?.id === BLOCK.COOKED_BEEF,
-  'Items können in der Truhe gelagert werden');
+  'Items can be stored in the chest');
 game.closeInventory();
 game.openChest({ x: 4, y: 2, z: 3 });
 ok(game.world.chests.get('4,2,3').slots[0]?.id === BLOCK.COOKED_BEEF,
-  'Truheninhalt bleibt beim erneuten Öffnen erhalten');
+  'Chest contents persist after reopening');
 game.closeInventory();
 
 const craftBtn = elById('btn-craft');
 craftBtn.dispatch('touchstart', makeEvent([{ identifier: 25, clientX: 10, clientY: 10 }]));
-ok(game.state === 'inventory', 'Crafting-Schnellknopf öffnet das Inventar');
+ok(game.state === 'inventory', 'Crafting shortcut opens the inventory');
 invBtn.dispatch('touchstart', makeEvent([{ identifier: 26, clientX: 10, clientY: 10 }]));
-ok(game.state === 'playing', 'Inventar bleibt über den Schnellknopf schließbar');
+ok(game.state === 'playing', 'Inventory can still be closed through the shortcut');
 
-// Menü-Button → Pause
+// Menu button → pause
 const menuBtn = elById('btn-menu');
 menuBtn.dispatch('touchstart', makeEvent([{ identifier: 9, clientX: 10, clientY: 10 }]));
-ok(game.state === 'paused', 'Menü-Button öffnet Pause');
+ok(game.state === 'paused', 'Menu button opens pause');
 menuBtn.dispatch('touchstart', makeEvent([{ identifier: 10, clientX: 10, clientY: 10 }]));
-ok(game.state === 'playing', 'Menü-Button kehrt zurück');
+ok(game.state === 'playing', 'Menu button resumes');
 
-// Vollbildmodus ist auch im Hauptmenü erreichbar; der doppelte HUD-Button wird dort ausgeblendet.
+// Fullscreen is also accessible in the main menu; the duplicate HUD button is hidden there.
 game.menus.showScreen('main-menu');
-ok(elById('btn-fullscreen').style.display === 'none', 'HUD-Vollbildknopf kollidiert im Hauptmenü nicht mit dem Menü');
+ok(elById('btn-fullscreen').style.display === 'none', 'HUD fullscreen button does not collide with the main menu');
 const menuFullscreenBtn = elById('btn-fullscreen-menu');
 menuFullscreenBtn.dispatch('touchend', makeEvent([{ identifier: 23, clientX: 20, clientY: 20 }]));
 await new Promise((r) => setTimeout(r, 0));
-ok(document.fullscreenElement === document.documentElement, 'Vollbildknopf im Hauptmenü aktiviert Vollbild');
-ok(menuFullscreenBtn.textContent.includes('beenden'), 'Menüknopf zeigt den aktiven Vollbildstatus');
+ok(document.fullscreenElement === document.documentElement, 'Main-menu fullscreen button enables fullscreen');
+ok(menuFullscreenBtn.textContent.includes('Exit'), 'Menu button shows the active fullscreen state');
 menuFullscreenBtn.dispatch('touchend', makeEvent([{ identifier: 24, clientX: 20, clientY: 20 }]));
 await new Promise((r) => setTimeout(r, 0));
-ok(document.fullscreenElement === null, 'Vollbildknopf im Hauptmenü beendet Vollbild wieder');
+ok(document.fullscreenElement === null, 'Main-menu fullscreen button exits fullscreen again');
 game.menus.hideAll();
-ok(elById('btn-fullscreen').style.display === '', 'HUD-Vollbildknopf wird nach dem Hauptmenü wieder eingeblendet');
+ok(elById('btn-fullscreen').style.display === '', 'HUD fullscreen button reappears after leaving the main menu');
 
-// Der HUD-Knopf funktioniert während des Spiels ebenfalls.
+// The HUD button also works during gameplay.
 const fullscreenBtn = elById('btn-fullscreen');
 fullscreenBtn.dispatch('touchend', makeEvent([{ identifier: 27, clientX: 20, clientY: 20 }]));
 await new Promise((r) => setTimeout(r, 0));
-ok(document.fullscreenElement === document.documentElement, 'HUD-Vollbildknopf aktiviert Vollbild');
+ok(document.fullscreenElement === document.documentElement, 'HUD fullscreen button enables fullscreen');
 fullscreenBtn.dispatch('touchend', makeEvent([{ identifier: 28, clientX: 20, clientY: 20 }]));
 await new Promise((r) => setTimeout(r, 0));
-ok(document.fullscreenElement === null, 'HUD-Vollbildknopf beendet Vollbild wieder');
+ok(document.fullscreenElement === null, 'HUD fullscreen button exits fullscreen again');
 
 game.touch.setSneak(true);
 const flyingBeforeToggle = game.player.flying;
 game._toggleFlight();
 ok(game.player.flying !== flyingBeforeToggle && !game.touch.sneak,
-  'Flugmoduswechsel löscht den alten mobilen Abwärts-Toggle');
+  'Flight-mode change clears the old mobile descend toggle');
 
-// Pixel-Ratio für Handy begrenzt
-ok(game.engine.pixelRatio <= 1.75, `Pixel-Ratio gedrosselt (${game.engine.pixelRatio})`);
+// Pixel ratio limited for phones
+ok(game.engine.pixelRatio <= 1.75, `Pixel ratio capped (${game.engine.pixelRatio})`);
 
 rafRunning = false;
-console.log(`\n${passed} bestanden, ${failed} fehlgeschlagen`);
+console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

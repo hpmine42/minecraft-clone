@@ -1,4 +1,4 @@
-// menus.js — Hauptmenü, Pause, Einstellungen, Inventar/Crafting, Tod, Hilfe.
+// menus.js — Main menu, pause, settings, inventory/crafting, death, and help.
 import { BLOCKS, getName } from '../world/blocks.js';
 import { drawTileIcon } from '../world/textures.js';
 import { matchRecipe, listRecipes, makeStack, canEquipItem, stacksEqual, EQUIPMENT_SLOTS } from '../player/inventory.js';
@@ -34,7 +34,7 @@ export class Menus {
   }
 
   // -------------------------------------------------------------------------
-  // Screen-Verwaltung
+  // Screen management
   // -------------------------------------------------------------------------
   showScreen(name) {
     const leavingInventory = this.activeScreen === 'inventory-screen' && name !== 'inventory-screen';
@@ -44,7 +44,7 @@ export class Menus {
       if (el) el.classList.toggle('visible', s === name);
     }
     this.activeScreen = name;
-    // Der HUD-Vollbildknopf bleibt nur im Spiel sichtbar; über Screen-Karten würden sich Controls optisch überlagern.
+    // Keep the HUD fullscreen button visible only in-game; it would overlap controls on screen cards.
     const hudFullscreen = this.els['btn-fullscreen'];
     if (hudFullscreen) hudFullscreen.style.display = name ? 'none' : '';
     if (leavingInventory) this._setSingleTransferMode(false);
@@ -60,22 +60,22 @@ export class Menus {
     this.showScreen(null);
   }
 
-  /** Normales Inventar mit dem klassischen 2×2-Spielercrafting öffnen. */
+  /** Open the regular inventory with classic 2×2 player crafting. */
   openPlayerInventory() {
     this._prepareInventoryMode(null);
     this._setCraftingMode('player');
     this.showScreen('inventory-screen');
   }
 
-  /** Eine Werkbank behält das größere 3×3-Crafting-Raster. */
+  /** A crafting table uses the larger 3×3 crafting grid. */
   openWorkbenchInventory() {
     this._prepareInventoryMode(null);
     this._setCraftingMode('workbench');
-    if (this.inventoryTitle) this.inventoryTitle.textContent = 'Werkbank';
+    if (this.inventoryTitle) this.inventoryTitle.textContent = 'Crafting Table';
     this.showScreen('inventory-screen');
   }
 
-  /** Ofen- und Truhenansichten verwenden dieselben Desktop-/Touch-Slots. */
+  /** Furnace and chest views use the same desktop/touch slots. */
   openFurnace(state) {
     this._prepareInventoryMode({ type: 'furnace', state, slots: state.slots });
     this._setCraftingMode('player');
@@ -105,11 +105,11 @@ export class Menus {
     if (this.furnacePanel) this.furnacePanel.style.display = isFurnace ? '' : 'none';
     if (this.chestPanel) this.chestPanel.style.display = isChest ? '' : 'none';
     if (this.inventoryTitle) {
-      this.inventoryTitle.textContent = isFurnace ? 'Schmelzofen' : isChest ? 'Truhe' : 'Inventar & Crafting';
+      this.inventoryTitle.textContent = isFurnace ? 'Furnace' : isChest ? 'Chest' : 'Inventory & Crafting';
     }
   }
 
-  /** Wird auch beim Schließen per Escape/mobilem Rück-Button aufgerufen. */
+  /** Also called when closing with Escape or the mobile back button. */
   closeActiveInventory() {
     this._setSingleTransferMode(false);
     this._returnCraftGrid();
@@ -134,15 +134,15 @@ export class Menus {
       this.craftSlotEls[i].el.style.display = i < size ? '' : 'none';
     }
     if (this.craftLabel) {
-      this.craftLabel.textContent = size === 4 ? 'Spielercrafting (2×2)' : 'Werkbank-Crafting (3×3)';
+      this.craftLabel.textContent = size === 4 ? 'Player Crafting (2×2)' : 'Crafting Table (3×3)';
     }
     if (this.transferStatus) {
-      this.transferStatus.textContent = `Ohne Ziehen einzelne Zutaten aus dem Inventar ins ${size === 4 ? '2×2' : '3×3'}-Feld legen.`;
+      this.transferStatus.textContent = `Place individual ingredients from the inventory into the ${size === 4 ? '2×2' : '3×3'} grid without dragging.`;
     }
     this.refreshInventory();
   }
 
-  /** Temporäre Cursor- und Craftingstapel werden zusammen mit dem Spielstand gesichert. */
+  /** Temporary cursor and crafting stacks are saved with the game. */
   serializeInventoryState() {
     const serialize = (stack) => (stack ? { ...stack } : null);
     return {
@@ -185,7 +185,7 @@ export class Menus {
   }
 
   // -------------------------------------------------------------------------
-  // Buttons binden
+  // Bind buttons
   // -------------------------------------------------------------------------
   _el(id) {
     return this.els[id] || (typeof document !== 'undefined' ? document.getElementById(id) : null);
@@ -197,7 +197,7 @@ export class Menus {
       if (!el) return;
       el.addEventListener('click', (e) => {
         e.preventDefault();
-        if (wasRecentTouch()) return; // Touch-Handler hat schon reagiert
+        if (wasRecentTouch()) return; // The touch handler has already responded
         fn();
       });
       el.addEventListener('touchend', (e) => {
@@ -258,7 +258,7 @@ export class Menus {
     click('btn-fullscreen', () => this.cb.onFullscreen && this.cb.onFullscreen());
     click('btn-fullscreen-menu', () => this.cb.onFullscreen && this.cb.onFullscreen());
 
-    // Einstellungen
+    // Settings
     const bindRange = (id, key, format) => {
       const el = this._el(id);
       if (!el) return;
@@ -274,7 +274,7 @@ export class Menus {
     bindRange('setting-sensitivity', 'sensitivity', (v) => v.toFixed(4));
     bindRange('setting-volume', 'volume', (v) => `${Math.round(v * 100)} %`);
     bindRange('setting-day-length', 'dayLength', (v) => {
-      if (v <= 0) return 'Aus';
+      if (v <= 0) return 'Off';
       return `${Math.round(v)} s`;
     });
     bindRange('setting-autosave-interval', 'autosaveInterval', (v) => {
@@ -307,17 +307,17 @@ export class Menus {
     bindCheck('setting-autosave', 'autosave');
 
     click('btn-reset-world', () => {
-      if (confirm('Welt wirklich zurücksetzen? Alle Bauwerke gehen verloren!')) {
+      if (confirm('Reset the world? All buildings will be lost!')) {
         this.cb.onResetWorld && this.cb.onResetWorld();
       }
     });
     click('btn-delete-save', () => {
-      if (confirm('Gespeicherte Welt wirklich löschen?')) {
+      if (confirm('Delete the saved world?')) {
         this.cb.onDeleteSave && this.cb.onDeleteSave();
       }
     });
 
-    // Einstellungen aus Hauptmenü
+    // Settings opened from the main menu
     const openSettingsFromMain = this.els['btn-open-settings'];
     if (openSettingsFromMain) {
       openSettingsFromMain.addEventListener('click', () => { this._settingsFrom = 'main-menu'; });
@@ -341,7 +341,7 @@ export class Menus {
         if (id === 'setting-fov') label.textContent = `${v}°`;
         if (id === 'setting-sensitivity') label.textContent = Number(v).toFixed(4);
         if (id === 'setting-volume') label.textContent = `${Math.round(v * 100)} %`;
-        if (id === 'setting-day-length') label.textContent = v <= 0 ? 'Aus' : `${Math.round(v)} s`;
+        if (id === 'setting-day-length') label.textContent = v <= 0 ? 'Off' : `${Math.round(v)} s`;
         if (id === 'setting-autosave-interval') {
           const seconds = Math.round(Number(v));
           const minutes = Math.floor(seconds / 60);
@@ -366,7 +366,7 @@ export class Menus {
     setChk('setting-autosave', s.autosave !== false);
   }
 
-  /** Spielstand-Buttons im Hauptmenü aktivieren. */
+  /** Enable save-game buttons in the main menu. */
   setHasSave(has) {
     const btn = this.els['btn-play'];
     const exportButton = this.els['btn-export-save'];
@@ -375,10 +375,10 @@ export class Menus {
       btn.disabled = !has;
       const label = btn.querySelector && btn.querySelector('.play-menu-label');
       if (label && label.parentElement) {
-        label.textContent = has ? 'Spiel fortsetzen' : 'Noch kein Spielstand';
-        btn.setAttribute('aria-label', has ? 'Spiel fortsetzen' : 'Kein Spielstand vorhanden');
+        label.textContent = has ? 'Continue Game' : 'No Saved Game Yet';
+        btn.setAttribute('aria-label', has ? 'Continue Game' : 'No saved game available');
       } else {
-        btn.textContent = has ? '▸ Spiel fortsetzen' : '▸ Spiel fortsetzen (kein Spielstand)';
+        btn.textContent = has ? '▸ Continue Game' : '▸ Continue Game (no saved game)';
       }
     }
     const del = this.els['btn-delete-save'];
@@ -386,7 +386,7 @@ export class Menus {
   }
 
   // -------------------------------------------------------------------------
-  // Inventar + Crafting
+  // Inventory + crafting
   // -------------------------------------------------------------------------
   _buildInventoryUI() {
     const root = this.els['inventory-body'];
@@ -394,12 +394,12 @@ export class Menus {
     root.innerHTML = '';
     root.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // Spielercrafting: vier Slots. Die fünf übrigen werden nur an der Werkbank eingeblendet.
+    // Player crafting: four slots. The other five are shown only at a crafting table.
     const craftWrap = document.createElement('div');
     craftWrap.className = 'craft-wrap';
     const craftLabel = document.createElement('div');
     craftLabel.className = 'craft-label';
-    craftLabel.textContent = 'Spielercrafting (2×2)';
+    craftLabel.textContent = 'Player Crafting (2×2)';
     craftWrap.appendChild(craftLabel);
     this.craftLabel = craftLabel;
 
@@ -408,12 +408,12 @@ export class Menus {
     const transferButton = document.createElement('button');
     transferButton.type = 'button';
     transferButton.className = 'craft-transfer-toggle';
-    transferButton.textContent = 'Einzel-Item-Modus starten';
+    transferButton.textContent = 'Start Single-Item Mode';
     transferButton.setAttribute('aria-pressed', 'false');
     const transferStatus = document.createElement('div');
     transferStatus.className = 'craft-transfer-status';
     transferStatus.setAttribute('aria-live', 'polite');
-    transferStatus.textContent = 'Ohne Ziehen einzelne Zutaten aus dem Inventar ins 2×2-Feld legen.';
+    transferStatus.textContent = 'Place individual ingredients from the inventory into the 2×2 grid without dragging.';
     transferButton.addEventListener('click', (e) => {
       e.preventDefault();
       if (wasRecentTouch()) return;
@@ -454,13 +454,13 @@ export class Menus {
     craftArea.appendChild(resultSlot.el);
     craftWrap.appendChild(craftArea);
 
-    // Rezeptbuch; auf schmalen Bildschirmen eingeklappt, damit das Inventar passt.
+    // Recipe book; collapsed on narrow screens so the inventory fits.
     const book = document.createElement('div');
     book.className = 'recipe-book';
     const bookToggle = document.createElement('button');
     bookToggle.type = 'button';
     bookToggle.className = 'recipe-book-toggle';
-    bookToggle.textContent = 'Rezeptbuch';
+    bookToggle.textContent = 'Recipe Book';
     const bookList = document.createElement('div');
     bookList.id = 'inventory-recipe-list';
     bookList.className = 'recipe-list';
@@ -496,7 +496,7 @@ export class Menus {
       const text = document.createElement('div');
       text.className = 'recipe-text';
       const names = [...new Set(recipe.ingredients)].map((id) => getName(id));
-      text.innerHTML = `<b>${recipe.name}</b><br><small>= ${recipe.result.count}× ${getName(recipe.result.id)}<br>benötigt: ${names.join(', ')}</small>`;
+      text.innerHTML = `<b>${recipe.name}</b><br><small>= ${recipe.result.count}× ${getName(recipe.result.id)}<br>requires: ${names.join(', ')}</small>`;
       row.appendChild(icon);
       row.appendChild(text);
       bookList.appendChild(row);
@@ -506,7 +506,7 @@ export class Menus {
     this.recipeBookToggle = bookToggle;
     this.recipeListEl = bookList;
 
-    // Ofen: Ein-/Brennstoff-/Ausgabe-Slots plus animierte Statusbalken.
+    // Furnace: input, fuel, and output slots plus animated status bars.
     const furnacePanel = document.createElement('section');
     furnacePanel.className = 'furnace-panel';
     furnacePanel.style.display = 'none';
@@ -528,14 +528,14 @@ export class Menus {
     };
     const inputAndFuel = document.createElement('div');
     inputAndFuel.className = 'furnace-input-column';
-    inputAndFuel.appendChild(addFurnaceSlot('Rohstoff', 0, 'furnace-input'));
-    inputAndFuel.appendChild(addFurnaceSlot('Brennstoff', 1, 'furnace-fuel'));
+    inputAndFuel.appendChild(addFurnaceSlot('Input', 0, 'furnace-input'));
+    inputAndFuel.appendChild(addFurnaceSlot('Fuel', 1, 'furnace-fuel'));
 
     const meters = document.createElement('div');
     meters.className = 'furnace-meters';
     const burnLabel = document.createElement('span');
     burnLabel.className = 'furnace-slot-label';
-    burnLabel.textContent = 'Feuer';
+    burnLabel.textContent = 'Fire';
     const burnTrack = document.createElement('div');
     burnTrack.className = 'furnace-meter furnace-burn-track';
     const burnFill = document.createElement('div');
@@ -546,7 +546,7 @@ export class Menus {
     furnaceArrow.textContent = '➜';
     const progressLabel = document.createElement('span');
     progressLabel.className = 'furnace-slot-label';
-    progressLabel.textContent = 'Schmelzen';
+    progressLabel.textContent = 'Smelting';
     const progressTrack = document.createElement('div');
     progressTrack.className = 'furnace-meter furnace-progress-track';
     const progressFill = document.createElement('div');
@@ -562,7 +562,7 @@ export class Menus {
 
     furnaceLayout.appendChild(inputAndFuel);
     furnaceLayout.appendChild(meters);
-    furnaceLayout.appendChild(addFurnaceSlot('Ergebnis', 2, 'furnace-output'));
+    furnaceLayout.appendChild(addFurnaceSlot('Result', 2, 'furnace-output'));
     furnacePanel.appendChild(furnaceLayout);
     const furnaceStatus = document.createElement('div');
     furnaceStatus.className = 'furnace-status';
@@ -570,18 +570,18 @@ export class Menus {
     furnacePanel.appendChild(furnaceStatus);
     const furnaceHint = document.createElement('div');
     furnaceHint.className = 'furnace-hint';
-    furnaceHint.textContent = 'Erze, Sand, Lehm, Holz und rohe Nahrung schmelzen. Kohle, Holzkohle und Holz dienen als Brennstoff.';
+    furnaceHint.textContent = 'Smelt ores, sand, clay, wood, and raw food. Coal, charcoal, and wood can be used as fuel.';
     furnacePanel.appendChild(furnaceHint);
     this.furnacePanel = furnacePanel;
     this.furnaceStatus = furnaceStatus;
 
-    // Truhe: 27 persistente Slots, mobil in drei gut antippbaren Reihen.
+    // Chest: 27 persistent slots, arranged in three touch-friendly rows on mobile.
     const chestPanel = document.createElement('section');
     chestPanel.className = 'chest-panel';
     chestPanel.style.display = 'none';
     const chestLabel = document.createElement('div');
     chestLabel.className = 'craft-label';
-    chestLabel.textContent = 'Truheninhalt';
+    chestLabel.textContent = 'Chest Contents';
     chestPanel.appendChild(chestLabel);
     const chestGrid = document.createElement('div');
     chestGrid.className = 'inv-grid chest-grid';
@@ -595,13 +595,13 @@ export class Menus {
     this.chestPanel = chestPanel;
     this.inventoryTitle = this.els['inventory-title'] || this._el('inventory-title');
 
-    // Ausrüstungsfeld und einfache Pixel-Charaktervorschau. Rüstungsslots
-    // akzeptieren ausschließlich Items mit einer passenden echten Itemdefinition.
+    // Equipment area and simple pixel character preview. Armor slots accept
+    // only items with a matching, actual item definition.
     const playerSidePanel = document.createElement('section');
     playerSidePanel.className = 'player-side-panel';
     const characterHeading = document.createElement('div');
     characterHeading.className = 'craft-label';
-    characterHeading.textContent = 'Charakter & Ausrüstung';
+    characterHeading.textContent = 'Character & Equipment';
     playerSidePanel.appendChild(characterHeading);
 
     const equipmentStage = document.createElement('div');
@@ -609,7 +609,7 @@ export class Menus {
     const armorColumn = document.createElement('div');
     armorColumn.className = 'equipment-column';
     this.equipmentSlotEls = {};
-    const equipmentLabels = { head: 'Kopf', chest: 'Brust', legs: 'Beine', feet: 'Füße', offhand: 'Nebenhand' };
+    const equipmentLabels = { head: 'Head', chest: 'Chest', legs: 'Legs', feet: 'Feet', offhand: 'Off-hand' };
     for (const slotName of EQUIPMENT_SLOTS.slice(0, 4)) {
       const group = document.createElement('div');
       group.className = 'equipment-slot-group';
@@ -617,7 +617,7 @@ export class Menus {
       label.className = 'equipment-slot-label';
       label.textContent = equipmentLabels[slotName];
       const slot = this._makeSlot('equipment', EQUIPMENT_SLOTS.indexOf(slotName));
-      slot.el.setAttribute('aria-label', `${equipmentLabels[slotName]}-Ausrüstung`);
+      slot.el.setAttribute('aria-label', `${equipmentLabels[slotName]} equipment`);
       group.appendChild(label);
       group.appendChild(slot.el);
       this.equipmentSlotEls[slotName] = slot;
@@ -630,12 +630,12 @@ export class Menus {
     characterCanvas.height = 128;
     characterCanvas.className = 'character-preview';
     characterCanvas.setAttribute('role', 'img');
-    characterCanvas.setAttribute('aria-label', 'Pixel-Charaktervorschau');
+    characterCanvas.setAttribute('aria-label', 'Pixel character preview');
     this.characterCanvas = characterCanvas;
     this._drawCharacterPreview();
     const characterCaption = document.createElement('span');
     characterCaption.className = 'character-caption';
-    characterCaption.textContent = 'Spieler';
+    characterCaption.textContent = 'Player';
     characterFigure.appendChild(characterCanvas);
     characterFigure.appendChild(characterCaption);
 
@@ -645,7 +645,7 @@ export class Menus {
     offhandLabel.className = 'equipment-slot-label';
     offhandLabel.textContent = equipmentLabels.offhand;
     const offhandSlot = this._makeSlot('equipment', EQUIPMENT_SLOTS.indexOf('offhand'));
-    offhandSlot.el.setAttribute('aria-label', 'Nebenhand');
+    offhandSlot.el.setAttribute('aria-label', 'Off-hand');
     this.equipmentSlotEls.offhand = offhandSlot;
     offhandGroup.appendChild(offhandLabel);
     offhandGroup.appendChild(offhandSlot.el);
@@ -657,12 +657,12 @@ export class Menus {
     playerSidePanel.appendChild(craftWrap);
     this.playerSidePanel = playerSidePanel;
 
-    // Inventarraster
+    // Inventory grid
     const invWrap = document.createElement('div');
     invWrap.className = 'inv-wrap';
     const invLabel = document.createElement('div');
     invLabel.className = 'craft-label';
-    invLabel.textContent = 'Inventar';
+    invLabel.textContent = 'Inventory';
     invWrap.appendChild(invLabel);
 
     this.invSlotEls = [];
@@ -677,7 +677,7 @@ export class Menus {
 
     const hotLabel = document.createElement('div');
     hotLabel.className = 'craft-label';
-    hotLabel.textContent = 'Schnellleiste';
+    hotLabel.textContent = 'Hotbar';
     invWrap.appendChild(hotLabel);
     const hotGrid = document.createElement('div');
     hotGrid.className = 'inv-grid hotbar-inv';
@@ -688,7 +688,7 @@ export class Menus {
     }
     invWrap.appendChild(hotGrid);
 
-    // Schwebender Stapel-Anzeige
+    // Floating stack display
     const floating = document.createElement('div');
     floating.id = 'floating-stack';
     floating.style.display = 'none';
@@ -701,7 +701,7 @@ export class Menus {
     inventoryLayout.appendChild(invWrap);
     this.inventoryLayout = inventoryLayout;
 
-    // Die Crafting-Umschaltung bleibt oben sichtbar, auch wenn der Slotbereich scrollt.
+    // Keep the crafting toggle visible at the top even when the slot area scrolls.
     root.appendChild(transferControls);
     root.appendChild(furnacePanel);
     root.appendChild(chestPanel);
@@ -718,7 +718,7 @@ export class Menus {
     this._bindInventoryTouchDrag();
     this._bindDesktopInventoryMouse();
 
-    // Inventar schließen (X)
+    // Close inventory (X)
     const close = this.els['btn-close-inventory'];
     if (close) {
       const closeFn = () => {
@@ -747,8 +747,8 @@ export class Menus {
     context.clearRect(0, 0, 96, 128);
     context.fillStyle = 'rgba(5, 8, 12, 0.3)';
     context.fillRect(5, 4, 86, 120);
-    // Ein neutrales Pixelmodell dient als Vorschau; das Projekt definiert derzeit
-    // keine Rüstungs- oder Spieler-Skin-Items.
+    // A neutral pixel model serves as the preview; the project currently defines
+    // no armor or player-skin items.
     context.fillStyle = '#263238';
     context.fillRect(33, 86, 13, 31);
     context.fillRect(50, 86, 13, 31);
@@ -777,9 +777,8 @@ export class Menus {
     context.fillRect(27, 38, 42, 4);
     context.fillRect(31, 83, 34, 4);
 
-    // Vorhandene, tatsächlich ausgerüstete Itemdefinitionen als Pixel-Icons
-    // über die passenden Körperbereiche legen; ohne Rüstungsdefinition bleibt
-    // die neutrale Vorschau unverändert.
+    // Overlay pixel icons for existing, equipped item definitions on the matching
+    // body areas. Without an armor definition, the neutral preview stays unchanged.
     const overlays = {
       head: [32, 5, 32, 30],
       chest: [27, 38, 42, 48],
@@ -845,7 +844,7 @@ export class Menus {
       document.addEventListener('pointerup', (e) => this._endInventoryPointer(e), { passive: false });
       document.addEventListener('pointercancel', (e) => this._cancelInventoryPointer(e), { passive: false });
     } else {
-      // Fallback für ältere Touch-Browser ohne Pointer Events.
+      // Fallback for older touch browsers without Pointer Events.
       document.addEventListener('touchmove', (e) => this._moveInventoryTouch(e), { passive: false });
       document.addEventListener('touchend', (e) => this._endInventoryTouch(e), { passive: false });
       document.addEventListener('touchcancel', (e) => this._cancelInventoryTouch(e), { passive: false });
@@ -928,7 +927,7 @@ export class Menus {
 
     const def = BLOCKS[stack.id];
     const durability = def?.durability > 0 && stack.dur != null
-      ? ` · Haltbarkeit ${stack.dur}/${def.durability}`
+      ? ` · Durability ${stack.dur}/${def.durability}`
       : '';
     tooltip.textContent = `${getName(stack.id)}${stack.count > 1 ? ` ×${stack.count}` : ''}${durability}`;
     tooltip.style.display = 'block';
@@ -950,15 +949,15 @@ export class Menus {
     const endedOnDifferentSlot = !!endTarget && !endedOnSameSlot;
 
     if (gesture.pickedUpAtStart) {
-      // Beim Aufnehmen per Drag bleibt der Cursor-Stapel hängen, falls man
-      // nur geklickt hat. Wird auf einem anderen Slot losgelassen, wird gelegt.
+      // When picking up by dragging, keep the stack on the cursor after a simple
+      // click. Releasing over another slot places it.
       if (endedOnDifferentSlot) {
         this._recordMouseDropTarget(gesture, endTarget);
         this._distributeMouseStack(gesture.button, gesture.targets);
       }
     } else if (endedOnSameSlot) {
-      // Kein echter Drag: normale Minecraft-Linksklick-/Rechtsklick-Regeln,
-      // einschließlich Tauschen verschiedener Stapel.
+      // Not an actual drag: use normal Minecraft left/right-click rules,
+      // including swapping different stacks.
       this._slotClick(gesture.startTarget.kind, gesture.startTarget.index, gesture.button);
     } else if (endedOnDifferentSlot) {
       this._recordMouseDropTarget(gesture, endTarget);
@@ -1018,7 +1017,7 @@ export class Menus {
     if (!this.heldStack || !targets?.length) return;
     let changed = false;
     if (button === 2) {
-      // Minecraft-Rechtsziehen: genau ein Item pro belegbarem Slot.
+      // Minecraft right-drag: exactly one item per eligible slot.
       for (const target of targets) {
         if (!this.heldStack) break;
         const placed = this._putHeldCountInSlot(target, 1);
@@ -1027,7 +1026,7 @@ export class Menus {
         changed = true;
       }
     } else {
-      // Minecraft-Linksziehen: Stapel möglichst gleichmäßig verteilen.
+      // Minecraft left-drag: distribute the stack as evenly as possible.
       let remaining = this.heldStack.count;
       let openTargets = targets.filter((target) => this._mouseTargetCapacity(target) > 0).length;
       for (const target of targets) {
@@ -1066,7 +1065,7 @@ export class Menus {
     e.preventDefault();
     e.stopPropagation();
     markTouchEvent();
-    try { e.currentTarget?.setPointerCapture?.(e.pointerId); } catch { /* Der Dokument-Fallback reicht aus. */ }
+    try { e.currentTarget?.setPointerCapture?.(e.pointerId); } catch { /* The document-level fallback is sufficient. */ }
 
     const sourceStack = this._getSlotStack(kind, index);
     this._slotGesture = {
@@ -1079,8 +1078,8 @@ export class Menus {
       lastTarget: null,
     };
 
-    // Tippen bleibt verfügbar: beim Drücken aufnehmen/ablegen, beim Ziehen
-    // wird das gewählte Item am Ziel abgelegt.
+    // Tapping remains available: press to pick up/place; dragging places
+    // the selected item at its destination.
     this._slotClick(kind, index);
     if (this.heldStack) this._positionFloatingStack(e);
   }
@@ -1127,7 +1126,7 @@ export class Menus {
       lastTarget: null,
     };
 
-    // Tippen bleibt unverändert: Das Item wird sofort aufgenommen oder abgelegt.
+    // Tapping is unchanged: the item is immediately picked up or placed.
     this._slotClick(kind, index);
     if (this.heldStack && touch) this._positionFloatingStack(touch);
   }
@@ -1237,8 +1236,8 @@ export class Menus {
     this.transferSourceIndex = -1;
     if (this.singleTransferButton) {
       this.singleTransferButton.textContent = active
-        ? 'Einzel-Item-Modus beenden'
-        : 'Einzel-Item-Modus starten';
+        ? 'Stop Single-Item Mode'
+        : 'Start Single-Item Mode';
       this.singleTransferButton.setAttribute('aria-pressed', String(active));
       this.singleTransferButton.classList.toggle('active', active);
     }
@@ -1250,7 +1249,7 @@ export class Menus {
     if (!stack || stack.count < 1) {
       this.transferSourceIndex = -1;
       this.refreshInventory();
-      if (this.transferStatus) this.transferStatus.textContent = 'Der Inventar-Slot ist leer. Wähle einen belegten Slot.';
+      if (this.transferStatus) this.transferStatus.textContent = 'That inventory slot is empty. Select an occupied slot.';
       return;
     }
     this.transferSourceIndex = index;
@@ -1275,8 +1274,8 @@ export class Menus {
       if (!canStack) {
         if (this.transferStatus) {
           this.transferStatus.textContent = target.id !== source.id
-            ? `Dieses Feld enthält ${getName(target.id)}. Wähle ein leeres oder passendes Feld.`
-            : 'Dieser Stapel ist voll. Wähle ein anderes Crafting-Feld.';
+            ? `This slot contains ${getName(target.id)}. Select an empty or matching slot.`
+            : 'This stack is full. Select another crafting slot.';
         }
         return;
       }
@@ -1345,8 +1344,8 @@ export class Menus {
     if (this.heldStack && !this._canPlaceInContainer(index, this.heldStack)) {
       if (session.type === 'furnace') {
         this._showContainerNotice(index === 1
-          ? 'Dieses Item ist kein Brennstoff.'
-          : 'Dieses Item kann nicht geschmolzen werden.');
+          ? 'This item is not a fuel.'
+          : 'This item cannot be smelted.');
       }
       return;
     }
@@ -1529,7 +1528,7 @@ export class Menus {
     const moving = { ...original };
     let changed = false;
 
-    // Erst kompatible Stapel auffüllen, danach leere Slots belegen.
+    // Fill compatible stacks first, then use empty slots.
     for (let pass = 0; pass < 2 && remaining > 0; pass++) {
       for (const target of targets) {
         if (remaining <= 0 || (target.kind === sourceKind && target.index === sourceIndex)) continue;
@@ -1652,7 +1651,7 @@ export class Menus {
     this.refreshInventory();
   }
 
-  /** Beim Schließen wird der Cursorstapel bewusst in die Welt geworfen. */
+  /** Closing deliberately drops the cursor stack into the world. */
   _dropHeldToWorld() {
     if (!this.heldStack) return;
     const stack = { ...this.heldStack };
@@ -1665,8 +1664,8 @@ export class Menus {
       }
     }
 
-    // Falls kein Welt-Drop-System verfügbar ist, nichts verlieren: erst ins
-    // Inventar legen und einen nicht unterzubringenden Rest am Cursor behalten.
+    // If no world-drop system is available, lose nothing: try the inventory first
+    // and keep any remaining items on the cursor.
     const leftover = this.inventory.add(stack.id, stack.count, stack.dur, stack.meta);
     this.heldStack = leftover > 0 ? { ...stack, count: leftover } : null;
     this.refreshInventory();
@@ -1724,13 +1723,13 @@ export class Menus {
     if (this.furnaceBurnFill) this.furnaceBurnFill.style.width = `${burn * 100}%`;
 
     let status;
-    if (!input) status = 'Lege einen schmelzbaren Rohstoff ein.';
-    else if (!recipe) status = 'Dieser Gegenstand kann hier nicht geschmolzen werden.';
-    else if (!outputFits) status = 'Der Ergebnis-Slot ist voll – hole zuerst das Produkt ab.';
-    else if (state.burnRemaining > 0) status = `Schmilzt ${getName(input.id)} … ${Math.floor(progress * 100)} %`;
-    else if (!state.slots[1]) status = 'Brennstoff fehlt. Kohle, Holzkohle oder Holz einlegen.';
-    else if (!canPlaceFurnaceItem(1, state.slots[1].id)) status = 'Das Item im Brennstoff-Slot brennt nicht.';
-    else status = 'Bereit – der Ofen startet automatisch.';
+    if (!input) status = 'Add a smeltable ingredient.';
+    else if (!recipe) status = 'This item cannot be smelted here.';
+    else if (!outputFits) status = 'The result slot is full—collect the product first.';
+    else if (state.burnRemaining > 0) status = `Smelting ${getName(input.id)} … ${Math.floor(progress * 100)}%`;
+    else if (!state.slots[1]) status = 'Fuel required. Add coal, charcoal, or wood.';
+    else if (!canPlaceFurnaceItem(1, state.slots[1].id)) status = 'The item in the fuel slot does not burn.';
+    else status = 'Ready—the furnace starts automatically.';
     if (this.containerNotice && Date.now() < this.containerNotice.expiresAt) status = this.containerNotice.text;
     else this.containerNotice = null;
     if (this.furnaceStatus) this.furnaceStatus.textContent = status;
@@ -1742,7 +1741,7 @@ export class Menus {
     this._refreshContainerUI();
   }
 
-  /** Alle Slot-Bilder aktualisieren. */
+  /** Refresh all slot images. */
   refreshInventory() {
     for (const slot of this.invSlotEls) {
       this._drawSlot(slot, this.inventory.getSlot(slot.index));
@@ -1767,11 +1766,11 @@ export class Menus {
         ? this.inventory.getSlot(this.transferSourceIndex)
         : null;
       if (!this.singleTransferMode) {
-        this.transferStatus.textContent = `Ein Item pro Tipp: Modus starten, Inventar-Slot wählen, dann ein ${this.craftingMode === 'workbench' ? '3×3' : '2×2'}-Crafting-Feld antippen.`;
+        this.transferStatus.textContent = `One item per tap: start the mode, select an inventory slot, then tap a ${this.craftingMode === 'workbench' ? '3×3' : '2×2'} crafting slot.`;
       } else if (!selectedSource) {
-        this.transferStatus.textContent = `Modus an: Tippe einen belegten Inventar-Slot an; danach ein ${this.craftingMode === 'workbench' ? '3×3' : '2×2'}-Feld. Pro Tipp wandert 1 Item.`;
+        this.transferStatus.textContent = `Mode on: tap an occupied inventory slot, then a ${this.craftingMode === 'workbench' ? '3×3' : '2×2'} slot. Each tap moves 1 item.`;
       } else {
-        this.transferStatus.textContent = `Ausgewählt: ${getName(selectedSource.id)} ×${selectedSource.count}. Tippe ein Crafting-Feld; je Tipp wandert 1 Item.`;
+        this.transferStatus.textContent = `Selected: ${getName(selectedSource.id)} ×${selectedSource.count}. Tap a crafting slot; each tap moves 1 item.`;
       }
     }
 
@@ -1796,76 +1795,76 @@ export class Menus {
   }
 
   // -------------------------------------------------------------------------
-  // Hilfe-Text
+  // Help text
   // -------------------------------------------------------------------------
   populateHelp(isTouch) {
     const el = this.els['help-content'];
     if (!el) return;
     el.innerHTML = isTouch ? `
-      <h3>Handy-Steuerung</h3>
+      <h3>Mobile Controls</h3>
       <ul>
-        <li><b>Linker Daumen:</b> Virtueller Joystick zum Bewegen</li>
-        <li><b>Auf Block tippen &amp; halten:</b> Block direkt unter dem Finger abbauen (wie Pocket Edition)</li>
-        <li><b>Wischen:</b> Umsehen; beim Wischen wird nicht abgebaut</li>
-        <li><b>⬆ Taste:</b> Springen (2× tippen = Fliegen an/aus)</li>
-        <li><b>⬇ Taste:</b> Schleichen umschalten; im Flug sinken (aktiv markiert)</li>
-        <li><b>⛏ Taste:</b> Block abbauen / Mob angreifen (halten)</li>
-        <li><b>▣ Taste:</b> Block platzieren / Item benutzen</li>
-        <li><b>Rucksack:</b> 2×2-Spielercrafting; Werkbänke öffnen das 3×3-Feld. Items antippen oder ziehen.</li>
-        <li><b>Ausrüstung:</b> Die Nebenhand ist nutzbar; Rüstungsslots akzeptieren nur passende, im Spiel definierte Rüstungsitems.</li>
-        <li><b>Ofen/Truhe:</b> Block ansehen und ▣ antippen; Slots per Tippen oder Ziehen bedienen</li>
-        <li><b>Einzel-Item-Modus:</b> Schalter oben im Inventar drücken, Slot wählen und Crafting-Feld antippen; pro Tipp wird 1 Item gelegt</li>
-        <li>Ein Stapel am Cursor fällt beim Schließen des Inventars als Welt-Drop vor den Spieler.</li>
-        <li><b>⛶ Taste:</b> Vollbild ein- und ausschalten</li>
-        <li><b>⚙ Taste:</b> Pause / Einstellungen</li>
-        <li><b>Hotbar:</b> Antippen zum Itemwechsel</li>
+        <li><b>Left thumb:</b> Use the virtual joystick to move</li>
+        <li><b>Touch and hold a block:</b> Mine the block directly under your finger (like Pocket Edition)</li>
+        <li><b>Swipe:</b> Look around; swiping does not mine blocks</li>
+        <li><b>⬆ button:</b> Jump (double-tap to toggle flying)</li>
+        <li><b>⬇ button:</b> Toggle sneaking; descend while flying (highlighted when active)</li>
+        <li><b>⛏ button:</b> Mine a block / attack a mob (hold)</li>
+        <li><b>▣ button:</b> Place a block / use an item</li>
+        <li><b>Backpack:</b> 2×2 player crafting; crafting tables open the 3×3 grid. Tap or drag items.</li>
+        <li><b>Equipment:</b> The off-hand is usable; armor slots accept only matching armor items defined in the game.</li>
+        <li><b>Furnace/Chest:</b> Look at the block and tap ▣; use slots by tapping or dragging</li>
+        <li><b>Single-item mode:</b> Press the toggle at the top of the inventory, select a slot, and tap a crafting slot; each tap places 1 item</li>
+        <li>A stack held on the cursor drops in front of the player when the inventory closes.</li>
+        <li><b>⛶ button:</b> Toggle fullscreen</li>
+        <li><b>⚙ button:</b> Pause / Settings</li>
+        <li><b>Hotbar:</b> Tap to switch items</li>
       </ul>
-      <h3>Tipps</h3>
+      <h3>Tips</h3>
       <ul>
-        <li>Das HUD zeigt Biom, Weltzeit, Wetter und Höhe; beim Anvisieren erscheinen Blockhinweise.</li>
-        <li>Bei Bedarf Kopf-Bobbing und Sprint-Zoom in den Einstellungen abschalten.</li>
-        <li>Auf dem Handy ist die Renderdistanz kleiner – in den Einstellungen erhöhbar.</li>
-        <li>Im Kreativmodus kannst du fliegen und alle Blöcke platzieren.</li>
-        <li>Nachts kommen Zombies – im Friedlich-Modus nicht!</li>
+        <li>The HUD shows the biome, world time, weather, and altitude; targeting a block shows contextual hints.</li>
+        <li>Disable head bobbing and sprint zoom in Settings if needed.</li>
+        <li>Render distance is lower by default on mobile and can be increased in Settings.</li>
+        <li>In Creative mode, you can fly and place every block.</li>
+        <li>Zombies appear at night—except in Peaceful mode!</li>
       </ul>
     ` : `
-      <h3>Tastatur & Maus</h3>
+      <h3>Keyboard & Mouse</h3>
       <ul>
-        <li><b>WASD / Pfeiltasten:</b> Bewegen</li>
-        <li><b>Maus:</b> Umsehen (Klick ins Fenster für Mauszeiger-Sperre)</li>
-        <li><b>Leertaste:</b> Springen &nbsp;|&nbsp; <b>2× Leertaste:</b> Fliegen (Kreativ)</li>
-        <li><b>Shift:</b> Schleichen / Fliegen tiefer &nbsp;|&nbsp; <b>Strg:</b> Sprinten</li>
-        <li><b>Linke Maustaste:</b> Block abbauen / angreifen</li>
-        <li><b>Rechte Maustaste:</b> Block platzieren / Item benutzen; Ofen und Truhe öffnen</li>
-        <li><b>Mittlere Maustaste:</b> Block kopieren (Kreativ)</li>
-        <li><b>Mausrad / 1-9:</b> Schnellleiste</li>
-        <li><b>E:</b> Inventar & Crafting &nbsp;|&nbsp; <b>Esc:</b> Pause</li>
-        <li><b>Im Inventar:</b> Linksklick nimmt/legt Stapel; Rechtsklick nimmt die Hälfte oder legt 1 Item. Ziehen verteilt, Shift-Klick sortiert zwischen Hotbar und Inventar.</li>
-        <li><b>Crafting:</b> Das Spielerraster ist 2×2, Werkbänke bieten 3×3. Rechtsklick nimmt ein Ergebnis; Shift-Klick craftet so viel wie möglich.</li>
-        <li><b>Tooltips & Ausrüstung:</b> Über Items fahren; Nebenhand und definierte Ausrüstung werden gespeichert.</li>
-        <li>Ein Cursorstapel wird beim Schließen als Welt-Drop vor dem Spieler abgelegt.</li>
-        <li><b>F1:</b> HUD für Screenshots aus-/einblenden &nbsp;|&nbsp; <b>F:</b> Fliegen &nbsp;|&nbsp; <b>F3:</b> Debug-Infos</li>
-        <li>Unter Einstellungen lässt sich Kamerabewegung reduzieren; Zielhinweise zeigen Blockaktionen am Fadenkreuz.</li>
-        <li><b>M:</b> Spielmodus wechseln &nbsp;|&nbsp; <b>P:</b> Friedlich umschalten</li>
-        <li><b>T:</b> Tag/Nacht springen &nbsp;|&nbsp; <b>O:</b> Wetter umschalten</li>
-        <li><b>F5:</b> Spiel speichern</li>
+        <li><b>WASD / arrow keys:</b> Move</li>
+        <li><b>Mouse:</b> Look around (click in the window to lock the pointer)</li>
+        <li><b>Space:</b> Jump &nbsp;|&nbsp; <b>Double-tap Space:</b> Fly (Creative)</li>
+        <li><b>Shift:</b> Sneak / fly down &nbsp;|&nbsp; <b>Ctrl:</b> Sprint</li>
+        <li><b>Left mouse button:</b> Mine a block / attack</li>
+        <li><b>Right mouse button:</b> Place a block / use an item; open furnaces and chests</li>
+        <li><b>Middle mouse button:</b> Pick block (Creative)</li>
+        <li><b>Mouse wheel / 1–9:</b> Hotbar</li>
+        <li><b>E:</b> Inventory & Crafting &nbsp;|&nbsp; <b>Esc:</b> Pause</li>
+        <li><b>In the inventory:</b> Left-click picks up/places stacks; right-click picks up half or places 1 item. Drag to distribute, and Shift-click to move stacks between the hotbar and inventory.</li>
+        <li><b>Crafting:</b> The player grid is 2×2; crafting tables provide 3×3. Right-click takes one result; Shift-click crafts as many as possible.</li>
+        <li><b>Tooltips & Equipment:</b> Hover over items; the off-hand and defined equipment are saved.</li>
+        <li>A cursor stack drops in front of the player when the inventory closes.</li>
+        <li><b>F1:</b> Hide/show the HUD for screenshots &nbsp;|&nbsp; <b>F:</b> Fly &nbsp;|&nbsp; <b>F3:</b> Debug info</li>
+        <li>Reduce camera motion in Settings; target hints show block actions at the crosshair.</li>
+        <li><b>M:</b> Switch game mode &nbsp;|&nbsp; <b>P:</b> Toggle Peaceful mode</li>
+        <li><b>T:</b> Skip day/night &nbsp;|&nbsp; <b>O:</b> Toggle weather</li>
+        <li><b>F5:</b> Save game</li>
       </ul>
-      <h3>Überleben</h3>
+      <h3>Survival</h3>
       <ul>
-        <li>Grabe Holz → Bretter → Stöcke → Werkbank → Werkzeuge.</li>
-        <li>Mit der Hacke machst du Ackerboden, darauf Samen pflanzen.</li>
-        <li>Schmelze Erze, Sand, Lehm, Holz und Fleisch; Kohle oder Holz hält den Ofen am Brennen.</li>
-        <li>Truhen lagern 27 Stapel – ihr Inhalt bleibt auch nach dem Laden der Welt erhalten.</li>
-        <li>Suche nach Kohle, Eisen, Gold und Diamanten in Höhlen.</li>
-        <li>Fackeln erhellen Höhlen und halten Zombies fern.</li>
+        <li>Gather wood → planks → sticks → crafting table → tools.</li>
+        <li>Use a hoe to create farmland, then plant seeds on it.</li>
+        <li>Smelt ores, sand, clay, wood, and meat; coal or wood keeps the furnace burning.</li>
+        <li>Chests store 27 stacks, and their contents persist when the world is reloaded.</li>
+        <li>Search caves for coal, iron, gold, and diamonds.</li>
+        <li>Torches light up caves and keep zombies away.</li>
       </ul>
     `;
   }
 
-  /** Zeigt "Spiel wird geladen..." mit Hinweistext. */
+  /** Show "Loading game..." with hint text. */
   setLoading(text) {
     const el = this.els['loading-text'];
-    if (el) el.textContent = text || 'Welt wird generiert…';
+    if (el) el.textContent = text || 'Generating World…';
     this.showScreen('loading-screen');
   }
 

@@ -1,4 +1,4 @@
-// Schnelltest der Weltmodule (ohne Browser).
+// Quick test of the world modules (without a browser).
 import { PerlinNoise, mulberry32, hashSeed, coordHash } from '../src/world/noise.js';
 import { BLOCKS, BLOCK, breakSpeed, getDrop, TOOL, isSolid } from '../src/world/blocks.js';
 import { generateAtlasData, ATLAS_SIZE, TILE_SIZE, ATLAS_COLS } from '../src/world/textures.js';
@@ -10,36 +10,36 @@ let passed = 0;
 let failed = 0;
 function ok(cond, msg) {
   if (cond) { passed++; }
-  else { failed++; console.error('FEHL:', msg); }
+  else { failed++; console.error('FAIL:', msg); }
 }
 
 // Noise
 const n = new PerlinNoise(42);
 const v = n.noise2D(1.5, 2.5);
-ok(Number.isFinite(v) && v >= -1.2 && v <= 1.2, `noise2D Bereich: ${v}`);
+ok(Number.isFinite(v) && v >= -1.2 && v <= 1.2, `noise2D range: ${v}`);
 const v3 = n.noise3D(1.5, 2.5, 3.5);
 ok(Number.isFinite(v3), 'noise3D finite');
-ok(Math.abs(n.fbm2D(0.1, 0.2, 4)) <= 1.2, 'fbm2D Bereich');
-ok(mulberry32(5)() !== mulberry32(6)(), 'RNG seed-sensitiv');
-ok(hashSeed('abc') === hashSeed('abc'), 'hashSeed stabil');
-ok(coordHash(1, 2, 3, 9) === coordHash(1, 2, 3, 9), 'coordHash stabil');
+ok(Math.abs(n.fbm2D(0.1, 0.2, 4)) <= 1.2, 'fbm2D range');
+ok(mulberry32(5)() !== mulberry32(6)(), 'RNG is seed-sensitive');
+ok(hashSeed('abc') === hashSeed('abc'), 'hashSeed is stable');
+ok(coordHash(1, 2, 3, 9) === coordHash(1, 2, 3, 9), 'coordHash is stable');
 
-// Blöcke
-ok(BLOCKS[BLOCK.STONE].name === 'Stein', 'Blockname');
-ok(isSolid(BLOCK.STONE) === true, 'Stein solid');
-ok(isSolid(BLOCK.WATER) === false, 'Wasser nicht solid');
-ok(breakSpeed(BLOCK.STONE, null) > 0, 'breakSpeed Stein');
-ok(breakSpeed(BLOCK.STONE, BLOCK.DIAMOND_PICKAXE) > breakSpeed(BLOCK.STONE, BLOCK.WOOD_PICKAXE), 'Diamant schneller als Holz');
-ok(breakSpeed(BLOCK.STONE, BLOCK.WOOD_SWORD) <= breakSpeed(BLOCK.STONE, null) * 1.01, 'Schwert nicht schneller');
-ok(breakSpeed(BLOCK.BEDROCK, BLOCK.DIAMOND_PICKAXE) === 0, 'Bedrock unzerstörbar');
+// Blocks
+ok(BLOCKS[BLOCK.STONE].name === 'Stone', 'Block name');
+ok(isSolid(BLOCK.STONE) === true, 'Stone is solid');
+ok(isSolid(BLOCK.WATER) === false, 'Water is not solid');
+ok(breakSpeed(BLOCK.STONE, null) > 0, 'breakSpeed for stone');
+ok(breakSpeed(BLOCK.STONE, BLOCK.DIAMOND_PICKAXE) > breakSpeed(BLOCK.STONE, BLOCK.WOOD_PICKAXE), 'Diamond is faster than wood');
+ok(breakSpeed(BLOCK.STONE, BLOCK.WOOD_SWORD) <= breakSpeed(BLOCK.STONE, null) * 1.01, 'Sword is not faster');
+ok(breakSpeed(BLOCK.BEDROCK, BLOCK.DIAMOND_PICKAXE) === 0, 'Bedrock is unbreakable');
 const drop = getDrop(BLOCK.STONE, BLOCK.WOOD_PICKAXE);
-ok(drop && drop.id === BLOCK.COBBLESTONE, 'Stein droppt Bruchstein');
-ok(getDrop(BLOCK.DIAMOND_ORE, null) === null, 'Diamant ohne Pickaxe kein Drop');
-ok(getDrop(BLOCK.DIAMOND_ORE, BLOCK.IRON_PICKAXE) !== null, 'Diamant mit Eisen-Pickaxe Drop');
-ok(getDrop(BLOCK.DIAMOND_ORE, BLOCK.WOOD_PICKAXE) === null, 'Diamant mit Holz-Pickaxe kein Drop');
-ok(getDrop(BLOCK.GRASS, BLOCK.DIAMOND_PICKAXE)?.id === BLOCK.DIRT, 'Gras droppt Erde');
+ok(drop && drop.id === BLOCK.COBBLESTONE, 'Stone drops cobblestone');
+ok(getDrop(BLOCK.DIAMOND_ORE, null) === null, 'Diamond ore without a pickaxe has no drop');
+ok(getDrop(BLOCK.DIAMOND_ORE, BLOCK.IRON_PICKAXE) !== null, 'Diamond ore with an iron pickaxe has a drop');
+ok(getDrop(BLOCK.DIAMOND_ORE, BLOCK.WOOD_PICKAXE) === null, 'Diamond ore with a wooden pickaxe has no drop');
+ok(getDrop(BLOCK.GRASS, BLOCK.DIAMOND_PICKAXE)?.id === BLOCK.DIRT, 'Grass drops dirt');
 
-// Jeder Block hat gültige Kacheln
+// Every block has valid tiles
 for (const b of Object.values(BLOCKS)) {
   if (b.render === 'item') {
     ok(Array.isArray(b.tiles) && b.tiles.length === 1 && b.tiles[0] >= 0, `Item-Tiles ${b.name}`);
@@ -50,15 +50,15 @@ for (const b of Object.values(BLOCKS)) {
 
 // Atlas
 const atlas = generateAtlasData(1337);
-ok(atlas.size === ATLAS_SIZE, 'Atlas-Größe');
+ok(atlas.size === ATLAS_SIZE, 'Atlas size');
 ok(atlas.pixels.length === ATLAS_SIZE * ATLAS_SIZE * 4, 'Atlas-Pixel');
-ok(atlas.pixels.some((x) => x > 0), 'Atlas hat Inhalt');
+ok(atlas.pixels.some((x) => x > 0), 'Atlas has content');
 const repeatedAtlas = generateAtlasData(1337);
 const alternateAtlas = generateAtlasData(1338);
 ok(atlas.pixels.every((value, index) => value === repeatedAtlas.pixels[index]),
-  'Pixel-Art-Atlas bleibt für denselben Seed reproduzierbar');
+  'Pixel-art atlas remains reproducible for the same seed');
 ok(atlas.pixels.some((value, index) => value !== alternateAtlas.pixels[index]),
-  'Texturdetails variieren deterministisch mit dem Atlas-Seed');
+  'Texture details vary deterministically with the atlas seed');
 const atlasPixel = (tile, x, y) => {
   const ax = (tile % ATLAS_COLS) * TILE_SIZE + x;
   const ay = Math.floor(tile / ATLAS_COLS) * TILE_SIZE + y;
@@ -76,13 +76,13 @@ const sameTilePixels = (a, b) => {
   }
   return true;
 };
-ok(!sameTilePixels(4, 47), 'Moosiges Bruchsteinmuster ist sichtbar vom normalen Bruchstein unterscheidbar');
-ok(atlas.pixels[atlasPixel(35, 0, 0) + 3] === 0, 'Blumen-Textur hat transparenten Hintergrund');
-ok(atlas.pixels[atlasPixel(35, 7, 10) + 3] === 255, 'Blumen-Stiel ist sichtbar/undurchsichtig');
-ok(atlas.pixels[atlasPixel(37, 0, 0) + 3] === 0, 'Gras-Textur hat transparenten Hintergrund');
-ok(atlas.pixels[atlasPixel(25, 0, 0) + 3] === 255, 'Laub-Textur füllt die ganze Kachel');
-ok(atlas.pixels[atlasPixel(43, 2, 2) + 3] === 0, 'Glas-Textur hat transparenten Hintergrund');
-ok(atlas.pixels[atlasPixel(43, 0, 8) + 3] === 255, 'Glasrahmen bleibt sichtbar');
+ok(!sameTilePixels(4, 47), 'Mossy cobblestone pattern is visibly distinct from regular cobblestone');
+ok(atlas.pixels[atlasPixel(35, 0, 0) + 3] === 0, 'Flower texture has a transparent background');
+ok(atlas.pixels[atlasPixel(35, 7, 10) + 3] === 255, 'Flower stem is visible/opaque');
+ok(atlas.pixels[atlasPixel(37, 0, 0) + 3] === 0, 'Grass texture has a transparent background');
+ok(atlas.pixels[atlasPixel(25, 0, 0) + 3] === 255, 'Leaf texture fills the entire tile');
+ok(atlas.pixels[atlasPixel(43, 2, 2) + 3] === 0, 'Glass texture has a transparent background');
+ok(atlas.pixels[atlasPixel(43, 0, 8) + 3] === 255, 'Glass frame remains visible');
 const opaqueBlockTiles = new Set(Object.values(BLOCKS)
   .filter((b) => b.id !== BLOCK.AIR && !b.transparent && b.render !== 'item' && b.tiles)
   .flatMap((b) => b.tiles));
@@ -93,7 +93,7 @@ ok([...opaqueBlockTiles].every((tile) => {
     }
   }
   return true;
-}), 'Alle opaken Blockseiten-Texturen sind vollständig deckend');
+}), 'All opaque block side textures are fully opaque');
 const hasColoredPixel = (tile) => {
   for (let y = 0; y < TILE_SIZE; y++) {
     for (let x = 0; x < TILE_SIZE; x++) {
@@ -104,49 +104,49 @@ const hasColoredPixel = (tile) => {
   return false;
 };
 ok(hasColoredPixel(35) && hasColoredPixel(36) && hasColoredPixel(37),
-  'Blumen- und Gras-Texturen enthalten sichtbare Farben');
-ok(BLOCKS[BLOCK.LEAVES].transparent === false, 'Laub blockiert die Sicht (kein schwarzer Himmel durch Löcher)');
+  'Flower and grass textures contain visible colors');
+ok(BLOCKS[BLOCK.LEAVES].transparent === false, 'Leaves block vision (no black sky through holes)');
 
-// Welt
+// World
 const world = new World(12345, 'normal', {});
 world.generateChunk(0, 0);
 const chunk = world.getChunk(0, 0);
-ok(chunk && chunk.generated, 'Chunk generiert');
-ok(chunk.blocks.some((b) => b !== 0), 'Chunk hat Blöcke');
+ok(chunk && chunk.generated, 'Chunk generated');
+ok(chunk.blocks.some((b) => b !== 0), 'Chunk contains blocks');
 
-// Bedrock bei y=0
-ok(chunk.blocks[blockIndex(0, 0, 0)] === BLOCK.BEDROCK, 'Bedrock unten');
+// Bedrock at y=0
+ok(chunk.blocks[blockIndex(0, 0, 0)] === BLOCK.BEDROCK, 'Bedrock at the bottom');
 
-// Höhe plausibel: über der Höhe ist Luft oder Wasser, darunter meist Stein/Erde
+// Plausible height: air or water above, mostly stone/dirt below
 let solidFound = 0;
 for (let y = 1; y < CHUNK_HEIGHT; y++) {
   const b = chunk.blocks[blockIndex(8, y, 8)];
   if (b === BLOCK.STONE || b === BLOCK.DIRT || b === BLOCK.GRASS || b === BLOCK.SAND) solidFound++;
 }
-ok(solidFound > 3, `Terrainfüllung (${solidFound})`);
+ok(solidFound > 3, `Terrain fill (${solidFound})`);
 
-// Licht berechnet
-ok(chunk.skyLight[blockIndex(8, CHUNK_HEIGHT - 1, 8)] === 15, 'Himmelslicht oben');
-ok(chunk.skyLight[blockIndex(0, 0, 0)] === 0, 'Kein Licht im Bedrock');
+// Lighting calculated
+ok(chunk.skyLight[blockIndex(8, CHUNK_HEIGHT - 1, 8)] === 15, 'Skylight at the top');
+ok(chunk.skyLight[blockIndex(0, 0, 0)] === 0, 'No light in bedrock');
 
 // setBlock / modified
 world.setBlock(5, 40, 5, BLOCK.TORCH);
 ok(world.getBlock(5, 40, 5) === BLOCK.TORCH, 'setBlock/getBlock');
-ok(world.modified.has('5,40,5'), 'Änderung gespeichert');
+ok(world.modified.has('5,40,5'), 'Change saved');
 ok(world.modifiedByChunk.get('0,0')?.size === 1,
-  'Spieleränderungen werden einem Chunk-Index zugeordnet');
-ok(world.getBlockLight(5, 40, 5) === 14, `Fackel-Licht (${world.getBlockLight(5, 40, 5)})`);
+  'Player changes are assigned to a chunk index');
+ok(world.getBlockLight(5, 40, 5) === 14, `Torch light (${world.getBlockLight(5, 40, 5)})`);
 world.recomputeLight(chunk);
 const reusedLightQueue = world._lightQueue;
 world.recomputeLight(chunk);
 ok(world._lightQueue === reusedLightQueue,
-  'Wiederholte Licht-BFS verwenden denselben vorallokierten Arbeitsbuffer');
+  'Repeated lighting BFS passes reuse the same preallocated work buffer');
 
 const negativeModifiedWorld = new World(777, 'normal', {});
 negativeModifiedWorld.modified.set('-1,40,-17', { id: BLOCK.GLASS, meta: 0 });
 negativeModifiedWorld.generateChunk(-1, -2);
 ok(negativeModifiedWorld.getBlock(-1, 40, -17) === BLOCK.GLASS,
-  'Chunk-Index spielt Änderungen an negativen Weltkoordinaten korrekt zurück');
+  'Chunk index correctly replays changes at negative world coordinates');
 
 const priorityWorld = new World(991, 'flat', {});
 priorityWorld.update(8, 8, 3, 0, 2);
@@ -155,15 +155,15 @@ const priorityHasCenter = priorityWorld.getChunk(0, 0)?.generated;
 const nearestChunk = priorityChunks.find((candidate) => candidate.cx !== 0 || candidate.cz !== 0);
 ok(priorityChunks.length === 2 && priorityHasCenter && nearestChunk
   && nearestChunk.cx * nearestChunk.cx + nearestChunk.cz * nearestChunk.cz === 1,
-  'Chunk-Streaming generiert nach dem Spieler-Chunk zuerst einen direkt angrenzenden Chunk');
+  'Chunk streaming generates a directly adjacent chunk immediately after the player chunk');
 
 // Raycast
 const ray = world.raycast({ x: 8.5, y: 60, z: 8.5 }, { x: 0, y: -1, z: 0 }, 40);
-ok(ray !== null, 'Raycast trifft Boden');
-ok(ray && ray.ny === 1, `Raycast Normal zeigt hoch (${ray && ray.ny})`);
+ok(ray !== null, 'Raycast hits the ground');
+ok(ray && ray.ny === 1, `Raycast normal points upward (${ray && ray.ny})`);
 ok(ray && ray.distance > 0 && ray.distance < 40, `Raycast Distanz (${ray && ray.distance})`);
 
-// Weite Welt generieren (verschiedene Biome finden)
+// Generate a wide world (find different biomes)
 const biomesFound = new Set();
 for (let i = 0; i < 40; i++) {
   const x = i * 37 - 200;
@@ -171,41 +171,41 @@ for (let i = 0; i < 40; i++) {
   const b = world.gen.biomeAt(x, z);
   biomesFound.add(b);
 }
-ok(biomesFound.size >= 3, `Mehrere Biome gefunden: ${[...biomesFound].map((b) => BIOME_NAMES[b]).join(', ')}`);
+ok(biomesFound.size >= 3, `Multiple biomes found: ${[...biomesFound].map((b) => BIOME_NAMES[b]).join(', ')}`);
 const biomeCacheParity = [[-183, 117], [-37, -91], [0, 0], [46, 210], [301, -17]]
   .every(([x, z]) => world.gen.biomeAt(x, z)
     === world.gen.biomeAtHeight(x, z, world.gen.heightAt(x, z)));
-ok(biomeCacheParity, 'Vorberechnete Spaltenhöhe liefert dieselben Biome wie die öffentliche Abfrage');
+ok(biomeCacheParity, 'Precomputed column height returns the same biomes as the public query');
 
-// Flat-Welt
+// Flat world
 const flat = new World(999, 'flat', {});
 flat.generateChunk(0, 0);
 const fc = flat.getChunk(0, 0);
-ok(fc.blocks[blockIndex(8, 32, 8)] === BLOCK.GRASS, 'Flat: Gras bei y=32');
-ok(fc.blocks[blockIndex(8, 33, 8)] === BLOCK.AIR, 'Flat: Luft darüber');
+ok(fc.blocks[blockIndex(8, 32, 8)] === BLOCK.GRASS, 'Flat: grass at y=32');
+ok(fc.blocks[blockIndex(8, 33, 8)] === BLOCK.AIR, 'Flat: air above');
 
-// Chunkgrenzen konsistent
+// Consistent chunk boundaries
 world.generateChunk(1, 0);
-ok(world.getBlock(15, 10, 8) !== undefined, 'Block an Chunkgrenze');
-ok(world.getBlock(16, 10, 8) !== undefined, 'Block in Nachbarchunk');
+ok(world.getBlock(15, 10, 8) !== undefined, 'Block at chunk boundary');
+ok(world.getBlock(16, 10, 8) !== undefined, 'Block in neighboring chunk');
 
-// Mesh-Build (nutzt three.js in Node)
+// Mesh build (uses three.js in Node)
 const built = world.update(8, 8, 1, 200);
-ok(built > 0, `Meshes gebaut (${built})`);
+ok(built > 0, `Meshes built (${built})`);
 const mesh = world.getChunk(0, 0).meshSolid;
-ok(mesh !== null || world.getChunk(0, 0).meshTransparent !== null, 'Mesh vorhanden');
+ok(mesh !== null || world.getChunk(0, 0).meshTransparent !== null, 'Mesh exists');
 if (mesh) {
-  ok(mesh.geometry.attributes.position.count > 0, 'Mesh hat Vertices');
-  ok(mesh.geometry.attributes.color.count === mesh.geometry.attributes.position.count, 'Farbattribute passen');
-  ok(mesh.geometry.index.count % 3 === 0, 'Indizes durch 3 teilbar');
+  ok(mesh.geometry.attributes.position.count > 0, 'Mesh has vertices');
+  ok(mesh.geometry.attributes.color.count === mesh.geometry.attributes.position.count, 'Color attributes match');
+  ok(mesh.geometry.index.count % 3 === 0, 'Indices are divisible by 3');
 }
 
-// Block-Außenseiten, dichtes Laub und Pflanzen ohne Z-Fighting
+// Block exteriors, dense leaves, and plants without z-fighting
 const probeChunk = new Chunk(0, 0);
 const probeWorld = { getBlock: () => BLOCK.AIR, getSkyLight: () => 15, getBlockLight: () => 0 };
 probeChunk.set(8, 30, 8, BLOCK.STONE);
 let probeGeometry = buildChunkGeometry(probeWorld, probeChunk);
-ok(probeGeometry.solid?.attributes.position.count === 24, 'Einzelner Block rendert alle sechs Außenseiten');
+ok(probeGeometry.solid?.attributes.position.count === 24, 'A single block renders all six exterior faces');
 const positions = probeGeometry.solid.attributes.position.array;
 const normals = probeGeometry.solid.attributes.normal.array;
 const indices = probeGeometry.solid.index.array;
@@ -221,22 +221,22 @@ for (let i = 0; i < indices.length; i += 3) {
   const dot = nx * normals[ia * 3] + ny * normals[ia * 3 + 1] + nz * normals[ia * 3 + 2];
   if (dot <= 0) facesWindOutward = false;
 }
-ok(facesWindOutward, 'Alle Blockflächen sind nach außen gewunden und von außen sichtbar');
+ok(facesWindOutward, 'All block faces wind outward and are visible from outside');
 probeChunk.set(8, 30, 8, BLOCK.LEAVES);
 probeGeometry = buildChunkGeometry(probeWorld, probeChunk);
 ok(probeGeometry.solid?.attributes.position.count === 24 && probeGeometry.transparent === null,
-  'Laub ist geschlossen und rendert im opaken Pass');
+  'Leaves are closed and render in the opaque pass');
 probeChunk.set(8, 30, 8, BLOCK.FLOWER_RED);
 probeGeometry = buildChunkGeometry(probeWorld, probeChunk);
 ok(probeGeometry.transparent?.attributes.position.count === 8,
-  'Kreuzpflanze hat genau zwei Flächen ohne doppelte Z-Fighting-Quads');
+  'Cross plant has exactly two faces without duplicate z-fighting quads');
 const darkPlantChunk = new Chunk(0, 0);
 darkPlantChunk.set(8, 30, 8, BLOCK.FLOWER_RED);
 const darkPlantGeometry = buildChunkGeometry({
   getBlock: () => BLOCK.AIR, getSkyLight: () => 0, getBlockLight: () => 0,
 }, darkPlantChunk).transparent;
 ok(Math.min(...darkPlantGeometry.attributes.color.array) >= 0.45 - 1e-6,
-  'Kreuzpflanzen behalten Mindesthelligkeit statt schwarz zu werden');
+  'Cross plants retain minimum brightness instead of turning black');
 
-console.log(`\n${passed} bestanden, ${failed} fehlgeschlagen`);
+console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

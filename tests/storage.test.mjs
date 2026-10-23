@@ -1,4 +1,4 @@
-// storage.test.mjs — Fehlerhafte Browserdaten sicher zurückweisen, ohne gespeicherte Bytes anzutasten.
+// storage.test.mjs — Safely reject malformed browser data without touching saved bytes.
 import {
   defaultSettings, exportSaveData, importSaveData, loadGame, loadSettings, saveGame, saveSettings,
 } from '../src/save/storage.js';
@@ -16,7 +16,7 @@ let passed = 0;
 let failed = 0;
 function ok(condition, message) {
   if (condition) passed++;
-  else { failed++; console.error(`FEHL: ${message}`); }
+  else { failed++; console.error(`FAIL: ${message}`); }
 }
 
 const validSave = {
@@ -27,33 +27,33 @@ const validSave = {
   inventory: { selected: 0, slots: [] },
 };
 store.set(SAVE_KEY, JSON.stringify(validSave));
-ok(loadGame()?.seed === 0, 'Gültige Spielstände einschließlich Seed 0 werden geladen');
+ok(loadGame()?.seed === 0, 'Valid saves, including seed 0, are loaded');
 
 const malformedSave = JSON.stringify({ version: 1, seed: 42 });
 store.set(SAVE_KEY, malformedSave);
 ok(loadGame() === null && store.get(SAVE_KEY) === malformedSave,
-  'Unvollständiger Spielstand wird zurückgewiesen, aber nicht gelöscht oder überschrieben');
+  'An incomplete save is rejected but not deleted or overwritten');
 const invalidPositionSave = JSON.stringify({
   ...validSave,
   player: { position: { x: 1, y: null, z: 2 } },
 });
 store.set(SAVE_KEY, invalidPositionSave);
 ok(loadGame() === null && store.get(SAVE_KEY) === invalidPositionSave,
-  'Nicht-endliche Spielerpositionen werden zurückgewiesen und bleiben zur Wiederherstellung erhalten');
+  'Non-finite player positions are rejected and preserved for recovery');
 const invalidOrientationSave = JSON.stringify({
   ...validSave,
-  player: { ...validSave.player, yaw: 'nicht numerisch' },
+  player: { ...validSave.player, yaw: 'not numeric' },
 });
 store.set(SAVE_KEY, invalidOrientationSave);
 ok(loadGame() === null && store.get(SAVE_KEY) === invalidOrientationSave,
-  'Ungültige Blickdaten werden abgewiesen, ohne die Sicherungsbytes zu verändern');
+  'Invalid orientation data is rejected without changing the backup bytes');
 
 const backup = JSON.stringify(validSave);
-store.set(SAVE_KEY, '{"beschädigt":true}');
-ok(exportSaveData() === '{"beschädigt":true}',
-  'Der Exportzugriff bewahrt auch beschädigte Daten zur manuellen Wiederherstellung');
+store.set(SAVE_KEY, '{"corrupted":true}');
+ok(exportSaveData() === '{"corrupted":true}',
+  'Export preserves even corrupted data for manual recovery');
 ok(importSaveData(backup) && loadGame()?.seed === 0,
-  'Eine gültige JSON-Sicherung wird vollständig importiert');
+  'A valid JSON backup is imported in full');
 const richBackup = JSON.stringify({
   ...validSave,
   modified: [{ pos: '1,2,3', id: 0, meta: 0 }],
@@ -63,23 +63,23 @@ const richBackup = JSON.stringify({
   droppedItems: [{ id: 3, count: 1, position: { x: 1, y: 11, z: 1 }, velocity: { x: 0, y: 0, z: 0 }, life: 200, pickupDelay: 0.2 }],
 });
 ok(importSaveData(richBackup) && loadGame()?.chests?.[0]?.[1]?.slots?.[0]?.count === 4,
-  'Gültige Sicherungen bewahren Weltänderungen, Container, Cursor-Items und Drops');
+  'Valid backups preserve world changes, containers, cursor items, and drops');
 const preservedBeforeInvalidImport = exportSaveData();
 ok(!importSaveData(JSON.stringify({
   ...validSave,
   inventory: { ...validSave.inventory, slots: [{ id: 3, count: 65 }] },
 })) && exportSaveData() === preservedBeforeInvalidImport,
-  'Ungültige Inventarstapel werden abgewiesen, ohne den bisherigen Spielstand zu ersetzen');
+  'Invalid inventory stacks are rejected without replacing the previous save');
 ok(!importSaveData(JSON.stringify({
   ...validSave,
   chests: [['2,10,2', { slots: [{ id: 3, count: 65 }] }]],
 })) && exportSaveData() === preservedBeforeInvalidImport,
-  'Ungültige Containerstapel werden abgewiesen statt beim Laden abgeschnitten');
+  'Invalid container stacks are rejected instead of being truncated on load');
 
 store.set(SETTINGS_KEY, JSON.stringify({
   renderDistance: 99,
   fov: 55,
-  sensitivity: 'schnell',
+  sensitivity: 'fast',
   volume: -4,
   dayLength: 450,
   autosaveInterval: 9999,
@@ -94,14 +94,14 @@ ok(settings.renderDistance === 10 && settings.fov === 60 && settings.volume === 
   && settings.dayLength === 450 && settings.autosaveInterval === 3600
   && settings.showDebug === true && settings.autosave === false && settings.reduceMotion === true
   && !('sensitivity' in settings) && !('particles' in settings) && !('invertY' in settings),
-  'Geladene Einstellungen werden auf bekannte Typen und sichere Wertebereiche normalisiert');
+  'Loaded settings are normalized to known types and safe ranges');
 ok({ ...defaultSettings(false), ...settings }.sensitivity === defaultSettings(false).sensitivity,
-  'Ungültige Einstellungen fallen auf geräteabhängige Standardwerte zurück');
+  'Invalid settings fall back to device-dependent defaults');
 store.set(SETTINGS_KEY, JSON.stringify({ autosaveInterval: 125 }));
 ok(loadSettings().autosaveInterval === 130,
-  'Das gespeicherte Autosave-Intervall wird an die Slider-Schrittweite angepasst');
+  'The saved autosave interval is aligned to the slider step');
 store.set(SETTINGS_KEY, JSON.stringify({ reduceMotion: 'yes' }));
-ok(!('reduceMotion' in loadSettings()), 'Kamerabewegungseinstellung akzeptiert ausschließlich echte boolesche Werte');
+ok(!('reduceMotion' in loadSettings()), 'Camera motion setting accepts only actual boolean values');
 
 const originalSetItem = localStorage.setItem;
 localStorage.setItem = (key, value) => {
@@ -120,10 +120,10 @@ const saveResult = saveGame(
 const importResult = importSaveData(backup);
 console.warn = originalWarn;
 ok(saveResult === false && importResult === false && store.get(SAVE_KEY) === preservedSave,
-  'Fehlgeschlagene Speicher- und Importvorgänge lassen den bisherigen Spielstand intakt');
+  'Failed save and import operations leave the previous save intact');
 
 saveSettings({ fov: 90 });
-ok(loadSettings().fov === 90, 'Gültige Einstellungen bleiben dauerhaft speicherbar');
+ok(loadSettings().fov === 90, 'Valid settings can be saved persistently');
 
-console.log(`\n${passed} bestanden, ${failed} fehlgeschlagen`);
+console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
