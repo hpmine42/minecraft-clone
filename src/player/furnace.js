@@ -1,4 +1,4 @@
-// furnace.js — Rezepte, Brennstoff und zeitbasierte Schmelzlogik für Ofen-Container.
+// furnace.js — Recipes, fuel, and time-based smelting logic for furnace containers.
 import { BLOCK, BLOCKS } from '../world/blocks.js';
 
 export const FURNACE_SLOT = Object.freeze({ INPUT: 0, FUEL: 1, OUTPUT: 2 });
@@ -18,7 +18,7 @@ const RECIPES = new Map([
   [BLOCK.CHICKEN, { id: BLOCK.COOKED_CHICKEN, count: 1, seconds: 5 }],
 ]);
 
-// Schmelzzeit je Brennstoff in Sekunden. Holzwerkzeuge sind ebenfalls verwendbar.
+// Burn time per fuel item in seconds. Wooden tools can also be used.
 const FUEL_SECONDS = new Map([
   [BLOCK.COAL, 80],
   [BLOCK.CHARCOAL, 80],
@@ -55,7 +55,7 @@ export function canPlaceFurnaceItem(slot, itemId) {
   return false;
 }
 
-/** Erstellt bzw. bereinigt einen Ofenzustand aus einem gespeicherten Objekt. */
+/** Create or sanitize a furnace state from a saved object. */
 export function createFurnaceState(saved = null) {
   const oldSlots = Array.isArray(saved?.slots) ? saved.slots : [];
   const slots = Array.from({ length: FURNACE_SLOT_COUNT }, (_, index) => {
@@ -82,8 +82,8 @@ export function createFurnaceState(saved = null) {
 }
 
 /**
- * Fortschritt eines Ofens simulieren. Rückgabewert ist true, wenn sich ein
- * Slot geändert hat (Brennstoff verbraucht oder Produkt fertiggestellt wurde).
+ * Simulate furnace progress. Returns true if a slot changed (fuel was consumed
+ * or a product was completed).
  */
 export function tickFurnace(state, dt) {
   if (!state || !Array.isArray(state.slots) || state.slots.length < FURNACE_SLOT_COUNT) return false;
@@ -105,8 +105,8 @@ export function tickFurnace(state, dt) {
   let remainingTime = elapsed;
   let processingTime = 0;
 
-  // Bereits gestarteter Brennstoff wird immer aufgebraucht, auch wenn gerade
-  // kein passender Rohstoff oder kein freier Ergebnisplatz vorhanden ist.
+  // Fuel that has already started burning is always consumed, even if there is
+  // currently no matching ingredient or space in the result slot.
   if (state.burnRemaining > 0) {
     const burned = Math.min(state.burnRemaining, remainingTime);
     state.burnRemaining -= burned;
@@ -114,8 +114,8 @@ export function tickFurnace(state, dt) {
     if (canSmelt) processingTime += burned;
   }
 
-  // Bei großen Simulationsschritten dürfen mehrere Brennstoffstücke korrekt
-  // nacheinander starten. Im Spiel selbst ist dt auf maximal 0,05 s begrenzt.
+  // Large simulation steps may correctly start multiple fuel items in sequence.
+  // In the game itself, dt is capped at 0.05 seconds.
   while (canSmelt && remainingTime > 1e-9 && state.burnRemaining <= 1e-9
       && state.slots[FURNACE_SLOT.FUEL] && isFuelItem(state.slots[FURNACE_SLOT.FUEL].id)) {
     const fuelStack = state.slots[FURNACE_SLOT.FUEL];
@@ -132,8 +132,7 @@ export function tickFurnace(state, dt) {
 
   if (canSmelt && processingTime > 0) {
     state.progress += processingTime;
-    // dt ist im Spiel klein; die Schleife hält den Kern trotzdem auch bei
-    // großen Test-/Ladeschritten korrekt.
+    // dt is small in-game; the loop still handles large test/loading steps correctly.
     while (state.progress >= recipe.seconds && state.slots[FURNACE_SLOT.INPUT]?.count > 0) {
       const currentInput = state.slots[FURNACE_SLOT.INPUT];
       const currentOutput = state.slots[FURNACE_SLOT.OUTPUT];

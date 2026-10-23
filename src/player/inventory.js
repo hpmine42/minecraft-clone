@@ -1,8 +1,8 @@
-// inventory.js — Inventar, Stapel, Haltbarkeit und Crafting-Rezepte.
+// inventory.js — Inventory, stacks, durability, and crafting recipes.
 import { BLOCKS, BLOCK, TOOL, isPlaceable } from '../world/blocks.js';
 
 export const HOTBAR_SIZE = 9;
-export const INV_SIZE = 36; // 0-8 Hotbar, 9-35 Inventar
+export const INV_SIZE = 36; // 0–8 hotbar, 9–35 inventory
 export const EQUIPMENT_SLOTS = Object.freeze(['head', 'chest', 'legs', 'feet', 'offhand']);
 
 function emptyEquipment() {
@@ -22,7 +22,7 @@ function metaKey(meta) {
   return `{${Object.keys(meta).sort().map((key) => `${key}:${metaKey(meta[key])}`).join(',')}}`;
 }
 
-/** Ein Slot: null | { id, count, dur, meta }. Ungültige Items werden verworfen. */
+/** A slot: null | { id, count, dur, meta }. Invalid items are discarded. */
 export function makeStack(id, count = 1, dur = null, meta = null) {
   const def = BLOCKS[id];
   const amount = Math.floor(Number(count));
@@ -47,7 +47,7 @@ export function stacksEqual(a, b) {
     && metaKey(a.meta) === metaKey(b.meta);
 }
 
-/** Rüstung wird nur akzeptiert, wenn eine existierende Itemdefinition den Slot nennt. */
+/** Equipment is accepted only when an existing item definition declares the slot. */
 export function canEquipItem(stack, slot) {
   if (!stack || !BLOCKS[stack.id] || !EQUIPMENT_SLOTS.includes(slot)) return false;
   const def = BLOCKS[stack.id];
@@ -57,16 +57,16 @@ export function canEquipItem(stack, slot) {
 export class Inventory {
   constructor(size = INV_SIZE) {
     this.slots = new Array(size).fill(null);
-    this.selected = 0; // Hotbar-Index
+    this.selected = 0; // Hotbar index
     this.equipment = emptyEquipment();
   }
 
-  /** Aktuell ausgewählter Stapel. */
+  /** Currently selected stack. */
   held() {
     return this.slots[this.selected] || null;
   }
 
-  /** Item hinzufügen. Gibt übrige Anzahl zurück (0 = alles aufgenommen). */
+  /** Add an item. Returns the remaining count (0 = everything was added). */
   add(id, count = 1, dur = null, meta = null) {
     const def = BLOCKS[id];
     let remaining = Math.floor(Number(count));
@@ -74,7 +74,7 @@ export class Inventory {
     const maxStack = Math.max(1, Number(def.maxStack) || 64);
     const stackMeta = cloneMeta(meta);
 
-    // Zuerst kompatible Stapel füllen. Beschädigte Werkzeuge bleiben Einzelstücke.
+    // Fill compatible stacks first. Damaged tools remain individual items.
     if (maxStack > 1 && dur == null && !(def.durability > 0)) {
       for (let i = 0; i < this.slots.length && remaining > 0; i++) {
         const current = this.slots[i];
@@ -87,7 +87,7 @@ export class Inventory {
       }
     }
 
-    // Danach freie Slots belegen; jedes Item bleibt innerhalb seiner Stapelgrenze.
+    // Then fill empty slots; every item stays within its stack limit.
     for (let i = 0; i < this.slots.length && remaining > 0; i++) {
       if (this.slots[i] == null) {
         const moved = Math.min(maxStack, remaining);
@@ -98,12 +98,12 @@ export class Inventory {
     return remaining;
   }
 
-  /** Anzahl eines Items im Inventar. */
+  /** Count an item in the inventory. */
   count(id) {
     return this.slots.reduce((total, stack) => total + (stack?.id === id ? stack.count : 0), 0);
   }
 
-  /** Konsumiert Items. Gibt true, wenn genug vorhanden waren. */
+  /** Consume items. Returns true if enough were available. */
   consume(id, count = 1) {
     let remaining = Math.floor(Number(count));
     if (!Number.isFinite(remaining) || remaining < 0 || this.count(id) < remaining) return false;
@@ -119,7 +119,7 @@ export class Inventory {
     return true;
   }
 
-  /** Slot-Inhalt setzen (für Drag&Drop). */
+  /** Set slot contents (for drag and drop). */
   setSlot(i, stack) {
     if (!Number.isInteger(i) || i < 0 || i >= this.slots.length) return false;
     if (stack == null) {
@@ -153,7 +153,7 @@ export class Inventory {
     return !!this.equipment[slot];
   }
 
-  /** Zwei Slots tauschen/vereinen. */
+  /** Swap or merge two slots. */
   swapSlots(a, b) {
     if (!Number.isInteger(a) || !Number.isInteger(b)
         || a < 0 || b < 0 || a >= this.slots.length || b >= this.slots.length || a === b) return;
@@ -171,7 +171,7 @@ export class Inventory {
     }
   }
 
-  /** Haltbarkeit des gehaltenen Werkzeugs reduzieren. */
+  /** Reduce the durability of the held tool. */
   damageHeld(amount = 1) {
     const stack = this.held();
     if (!stack) return null;
@@ -186,7 +186,7 @@ export class Inventory {
     return stack;
   }
 
-  /** Schadensbonus des gehaltenen Werkzeugs. */
+  /** Damage bonus of the held tool. */
   heldDamage() {
     const stack = this.held();
     if (!stack) return 1;
@@ -194,7 +194,7 @@ export class Inventory {
     return def && def.damage > 0 ? def.damage : 1;
   }
 
-  /** Serialisierung mit rückwärtskompatiblem equipment-Feld. */
+  /** Serialization with a backward-compatible equipment field. */
   toJSON() {
     const serialize = (stack) => (stack ? {
       id: stack.id,
@@ -245,11 +245,11 @@ export class Inventory {
 }
 
 // ---------------------------------------------------------------------------
-// Crafting-Rezepte
+// Crafting recipes
 // ---------------------------------------------------------------------------
 /**
- * Rezept: shaped (Pattern mit Zeichen) oder shapeless (Zutatenliste).
- * pattern: Array aus Strings, ' ' = leer, Buchstabe = Item aus key.
+ * Recipe: shaped (character pattern) or shapeless (ingredient list).
+ * pattern: array of strings, ' ' = empty, letter = item from key.
  * result: { id, count }
  */
 function shaped(pattern, key, result, name) {
@@ -263,55 +263,55 @@ const P = BLOCK.PLANKS;
 const S = BLOCK.STICK;
 
 export const RECIPES = [
-  shapeless([BLOCK.LOG], { id: BLOCK.PLANKS, count: 4 }, 'Holzbretter (Eiche)'),
-  shapeless([BLOCK.BIRCH_LOG], { id: BLOCK.PLANKS, count: 4 }, 'Holzbretter (Birke)'),
-  shapeless([BLOCK.SPRUCE_LOG], { id: BLOCK.PLANKS, count: 4 }, 'Holzbretter (Fichte)'),
-  shaped(['P', 'P'], { P }, { id: BLOCK.STICK, count: 4 }, 'Stöcke'),
-  shaped(['PP', 'PP'], { P }, { id: BLOCK.CRAFTING_TABLE, count: 1 }, 'Werkbank'),
-  shaped(['CCC', 'C C', 'CCC'], { C: BLOCK.COBBLESTONE }, { id: BLOCK.FURNACE, count: 1 }, 'Schmelzofen'),
-  shaped(['PPP', 'P P', 'PPP'], { P }, { id: BLOCK.CHEST, count: 1 }, 'Truhe'),
-  shaped(['C', 'S'], { C: BLOCK.COAL, S }, { id: BLOCK.TORCH, count: 4 }, 'Fackeln'),
-  shaped(['C', 'S'], { C: BLOCK.CHARCOAL, S }, { id: BLOCK.TORCH, count: 4 }, 'Holzkohle-Fackeln'),
-  shaped(['C', 'S'], { C: BLOCK.REDSTONE, S }, { id: BLOCK.TORCH, count: 1 }, 'Redstone-Fackel'),
-  shaped(['SSS', ' S ', ' S '], { S }, { id: BLOCK.LADDER, count: 3 }, 'Leiter'),
-  shaped(['SS', 'SS'], { S: BLOCK.SAND }, { id: BLOCK.SANDSTONE, count: 1 }, 'Sandstein'),
-  shaped(['SS', 'SS'], { S: BLOCK.STONE }, { id: BLOCK.STONE_BRICKS, count: 4 }, 'Steinziegel'),
-  shaped(['SS', 'SS'], { S: BLOCK.CLAY }, { id: BLOCK.BRICKS, count: 4 }, 'Ziegelsteine'),
-  shaped(['W'], { W: BLOCK.WHEAT_ITEM }, { id: BLOCK.BREAD, count: 1 }, 'Brot'),
-  shaped(['W', 'W', 'W'], { W: BLOCK.WHEAT_ITEM }, { id: BLOCK.BREAD, count: 1 }, 'Brot'),
-  shaped(['WWW'], { W: BLOCK.WHEAT_ITEM }, { id: BLOCK.BREAD, count: 1 }, 'Brot'),
-  shapeless([BLOCK.BONE], { id: BLOCK.BONE_MEAL, count: 3 }, 'Knochenmehl'),
-  shapeless([BLOCK.SUGAR_CANE], { id: BLOCK.SUGAR_CANE, count: 1 }, 'Zuckerrohr'),
+  shapeless([BLOCK.LOG], { id: BLOCK.PLANKS, count: 4 }, 'Oak Planks'),
+  shapeless([BLOCK.BIRCH_LOG], { id: BLOCK.PLANKS, count: 4 }, 'Birch Planks'),
+  shapeless([BLOCK.SPRUCE_LOG], { id: BLOCK.PLANKS, count: 4 }, 'Spruce Planks'),
+  shaped(['P', 'P'], { P }, { id: BLOCK.STICK, count: 4 }, 'Sticks'),
+  shaped(['PP', 'PP'], { P }, { id: BLOCK.CRAFTING_TABLE, count: 1 }, 'Crafting Table'),
+  shaped(['CCC', 'C C', 'CCC'], { C: BLOCK.COBBLESTONE }, { id: BLOCK.FURNACE, count: 1 }, 'Furnace'),
+  shaped(['PPP', 'P P', 'PPP'], { P }, { id: BLOCK.CHEST, count: 1 }, 'Chest'),
+  shaped(['C', 'S'], { C: BLOCK.COAL, S }, { id: BLOCK.TORCH, count: 4 }, 'Torches'),
+  shaped(['C', 'S'], { C: BLOCK.CHARCOAL, S }, { id: BLOCK.TORCH, count: 4 }, 'Charcoal Torches'),
+  shaped(['C', 'S'], { C: BLOCK.REDSTONE, S }, { id: BLOCK.TORCH, count: 1 }, 'Redstone Torch'),
+  shaped(['SSS', ' S ', ' S '], { S }, { id: BLOCK.LADDER, count: 3 }, 'Ladder'),
+  shaped(['SS', 'SS'], { S: BLOCK.SAND }, { id: BLOCK.SANDSTONE, count: 1 }, 'Sandstone'),
+  shaped(['SS', 'SS'], { S: BLOCK.STONE }, { id: BLOCK.STONE_BRICKS, count: 4 }, 'Stone Bricks'),
+  shaped(['SS', 'SS'], { S: BLOCK.CLAY }, { id: BLOCK.BRICKS, count: 4 }, 'Bricks'),
+  shaped(['W'], { W: BLOCK.WHEAT_ITEM }, { id: BLOCK.BREAD, count: 1 }, 'Bread'),
+  shaped(['W', 'W', 'W'], { W: BLOCK.WHEAT_ITEM }, { id: BLOCK.BREAD, count: 1 }, 'Bread'),
+  shaped(['WWW'], { W: BLOCK.WHEAT_ITEM }, { id: BLOCK.BREAD, count: 1 }, 'Bread'),
+  shapeless([BLOCK.BONE], { id: BLOCK.BONE_MEAL, count: 3 }, 'Bone Meal'),
+  shapeless([BLOCK.SUGAR_CANE], { id: BLOCK.SUGAR_CANE, count: 1 }, 'Sugar Cane'),
 
-  // Werkzeuge: Spitzhacken
-  shaped(['MMM', ' S ', ' S '], { M: BLOCK.PLANKS, S }, { id: BLOCK.WOOD_PICKAXE, count: 1 }, 'Holzspitzhacke'),
-  shaped(['MMM', ' S ', ' S '], { M: BLOCK.COBBLESTONE, S }, { id: BLOCK.STONE_PICKAXE, count: 1 }, 'Steinspitzhacke'),
-  shaped(['MMM', ' S ', ' S '], { M: BLOCK.IRON_INGOT, S }, { id: BLOCK.IRON_PICKAXE, count: 1 }, 'Eisenspitzhacke'),
-  shaped(['MMM', ' S ', ' S '], { M: BLOCK.DIAMOND, S }, { id: BLOCK.DIAMOND_PICKAXE, count: 1 }, 'Diamantspitzhacke'),
-  // Äxte
-  shaped(['MM', 'MS', ' S'], { M: BLOCK.PLANKS, S }, { id: BLOCK.WOOD_AXE, count: 1 }, 'Holzaxt'),
-  shaped(['MM', 'MS', ' S'], { M: BLOCK.COBBLESTONE, S }, { id: BLOCK.STONE_AXE, count: 1 }, 'Steinaxt'),
-  shaped(['MM', 'MS', ' S'], { M: BLOCK.IRON_INGOT, S }, { id: BLOCK.IRON_AXE, count: 1 }, 'Eisenaxt'),
-  shaped(['MM', 'MS', ' S'], { M: BLOCK.DIAMOND, S }, { id: BLOCK.DIAMOND_AXE, count: 1 }, 'Diamantaxt'),
-  // Schaufeln
-  shaped(['M', 'S', 'S'], { M: BLOCK.PLANKS, S }, { id: BLOCK.WOOD_SHOVEL, count: 1 }, 'Holzschaufel'),
-  shaped(['M', 'S', 'S'], { M: BLOCK.COBBLESTONE, S }, { id: BLOCK.STONE_SHOVEL, count: 1 }, 'Steinschaufel'),
-  shaped(['M', 'S', 'S'], { M: BLOCK.IRON_INGOT, S }, { id: BLOCK.IRON_SHOVEL, count: 1 }, 'Eisenschaufel'),
-  shaped(['M', 'S', 'S'], { M: BLOCK.DIAMOND, S }, { id: BLOCK.DIAMOND_SHOVEL, count: 1 }, 'Diamantschaufel'),
-  // Schwerter
-  shaped(['M', 'M', 'S'], { M: BLOCK.PLANKS, S }, { id: BLOCK.WOOD_SWORD, count: 1 }, 'Holzschwert'),
-  shaped(['M', 'M', 'S'], { M: BLOCK.COBBLESTONE, S }, { id: BLOCK.STONE_SWORD, count: 1 }, 'Steinschwert'),
-  shaped(['M', 'M', 'S'], { M: BLOCK.IRON_INGOT, S }, { id: BLOCK.IRON_SWORD, count: 1 }, 'Eisenschwert'),
-  shaped(['M', 'M', 'S'], { M: BLOCK.DIAMOND, S }, { id: BLOCK.DIAMOND_SWORD, count: 1 }, 'Diamantschwert'),
-  // Hacke
-  shaped(['MM', ' S', ' S'], { M: BLOCK.PLANKS, S }, { id: BLOCK.WOOD_HOE, count: 1 }, 'Holzhacke'),
-  shaped(['MM', ' S', ' S'], { M: BLOCK.COBBLESTONE, S }, { id: BLOCK.STONE_HOE, count: 1 }, 'Steinhacke'),
-  shaped(['MM', ' S', ' S'], { M: BLOCK.IRON_INGOT, S }, { id: BLOCK.IRON_HOE, count: 1 }, 'Eisenhacke'),
-  shaped(['MM', ' S', ' S'], { M: BLOCK.DIAMOND, S }, { id: BLOCK.DIAMOND_HOE, count: 1 }, 'Diamanthacke'),
+  // Tools: pickaxes
+  shaped(['MMM', ' S ', ' S '], { M: BLOCK.PLANKS, S }, { id: BLOCK.WOOD_PICKAXE, count: 1 }, 'Wooden Pickaxe'),
+  shaped(['MMM', ' S ', ' S '], { M: BLOCK.COBBLESTONE, S }, { id: BLOCK.STONE_PICKAXE, count: 1 }, 'Stone Pickaxe'),
+  shaped(['MMM', ' S ', ' S '], { M: BLOCK.IRON_INGOT, S }, { id: BLOCK.IRON_PICKAXE, count: 1 }, 'Iron Pickaxe'),
+  shaped(['MMM', ' S ', ' S '], { M: BLOCK.DIAMOND, S }, { id: BLOCK.DIAMOND_PICKAXE, count: 1 }, 'Diamond Pickaxe'),
+  // Axes
+  shaped(['MM', 'MS', ' S'], { M: BLOCK.PLANKS, S }, { id: BLOCK.WOOD_AXE, count: 1 }, 'Wooden Axe'),
+  shaped(['MM', 'MS', ' S'], { M: BLOCK.COBBLESTONE, S }, { id: BLOCK.STONE_AXE, count: 1 }, 'Stone Axe'),
+  shaped(['MM', 'MS', ' S'], { M: BLOCK.IRON_INGOT, S }, { id: BLOCK.IRON_AXE, count: 1 }, 'Iron Axe'),
+  shaped(['MM', 'MS', ' S'], { M: BLOCK.DIAMOND, S }, { id: BLOCK.DIAMOND_AXE, count: 1 }, 'Diamond Axe'),
+  // Shovels
+  shaped(['M', 'S', 'S'], { M: BLOCK.PLANKS, S }, { id: BLOCK.WOOD_SHOVEL, count: 1 }, 'Wooden Shovel'),
+  shaped(['M', 'S', 'S'], { M: BLOCK.COBBLESTONE, S }, { id: BLOCK.STONE_SHOVEL, count: 1 }, 'Stone Shovel'),
+  shaped(['M', 'S', 'S'], { M: BLOCK.IRON_INGOT, S }, { id: BLOCK.IRON_SHOVEL, count: 1 }, 'Iron Shovel'),
+  shaped(['M', 'S', 'S'], { M: BLOCK.DIAMOND, S }, { id: BLOCK.DIAMOND_SHOVEL, count: 1 }, 'Diamond Shovel'),
+  // Swords
+  shaped(['M', 'M', 'S'], { M: BLOCK.PLANKS, S }, { id: BLOCK.WOOD_SWORD, count: 1 }, 'Wooden Sword'),
+  shaped(['M', 'M', 'S'], { M: BLOCK.COBBLESTONE, S }, { id: BLOCK.STONE_SWORD, count: 1 }, 'Stone Sword'),
+  shaped(['M', 'M', 'S'], { M: BLOCK.IRON_INGOT, S }, { id: BLOCK.IRON_SWORD, count: 1 }, 'Iron Sword'),
+  shaped(['M', 'M', 'S'], { M: BLOCK.DIAMOND, S }, { id: BLOCK.DIAMOND_SWORD, count: 1 }, 'Diamond Sword'),
+  // Hoes
+  shaped(['MM', ' S', ' S'], { M: BLOCK.PLANKS, S }, { id: BLOCK.WOOD_HOE, count: 1 }, 'Wooden Hoe'),
+  shaped(['MM', ' S', ' S'], { M: BLOCK.COBBLESTONE, S }, { id: BLOCK.STONE_HOE, count: 1 }, 'Stone Hoe'),
+  shaped(['MM', ' S', ' S'], { M: BLOCK.IRON_INGOT, S }, { id: BLOCK.IRON_HOE, count: 1 }, 'Iron Hoe'),
+  shaped(['MM', ' S', ' S'], { M: BLOCK.DIAMOND, S }, { id: BLOCK.DIAMOND_HOE, count: 1 }, 'Diamond Hoe'),
 ];
 
 /**
- * Prüft ein Spieler- (2×2) oder Werkbank- (3×3) Crafting-Raster.
+ * Match a player (2×2) or crafting table (3×3) crafting grid.
  * @returns {{id:number,count:number}|null}
  */
 export function matchRecipe(grid) {
@@ -320,7 +320,7 @@ export function matchRecipe(grid) {
   const ids = grid.map((stack) => (stack ? stack.id : null));
   if (ids.every((id) => id == null)) return null;
 
-  // Nichtleeres Rechteck bestimmen, damit Rezepte an jeder Rasterposition passen.
+  // Find the non-empty rectangle so recipes match at any grid position.
   let minR = size, maxR = -1, minC = size, maxC = -1;
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
@@ -380,7 +380,7 @@ export function matchRecipe(grid) {
   return null;
 }
 
-/** Alle Rezepte, die ein Spieler mit "alles" herstellen könnte (für die Hilfe). */
+/** All recipes a player could craft with unlimited ingredients (for Help). */
 export function listRecipes() {
   return RECIPES.map((r) => ({
     name: r.name,

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -7,12 +7,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a2b1a">
-  <title>Minecraft-Klon – Voxel-Abenteuer für PC & Handy</title>
+  <title>Minecraft Clone – Voxel Adventure for PC & Mobile</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%2358a83c'/><rect y='50' width='100' height='50' fill='%237a5230'/></svg>">
 </head>
 <body>
-  <!-- Spiel-Canvas -->
+  <!-- Game canvas -->
   <canvas id="game"></canvas>
 
   <!-- ============================== HUD ============================== -->
@@ -43,10 +43,10 @@
     </div>
 
     <div id="fps"></div>
-    <button id="btn-fullscreen" class="fullscreen-btn" type="button" aria-label="Vollbildmodus aktivieren" aria-pressed="false" title="Vollbildmodus umschalten">⛶</button>
+    <button id="btn-fullscreen" class="fullscreen-btn" type="button" aria-label="Enter fullscreen" aria-pressed="false" title="Toggle fullscreen">⛶</button>
     <pre id="debug"></pre>
 
-    <!-- ===================== Mobile Steuerung ===================== -->
+    <!-- ===================== Mobile controls ===================== -->
     <div id="mobile-controls">
       <div id="joystick-zone">
         <div id="joystick-base">
@@ -56,21 +56,21 @@
       <div id="look-zone"></div>
 
       <div id="action-buttons">
-        <button id="btn-attack" class="touch-btn big" aria-label="Abbauen / Angreifen">⛏</button>
-        <button id="btn-place" class="touch-btn big" aria-label="Platzieren">▣</button>
+        <button id="btn-attack" class="touch-btn big" aria-label="Mine / Attack">⛏</button>
+        <button id="btn-place" class="touch-btn big" aria-label="Place">▣</button>
       </div>
 
       <div id="move-buttons">
-        <button id="btn-jump" class="touch-btn" aria-label="Springen">⬆</button>
-        <button id="btn-sneak" class="touch-btn" aria-label="Schleichen">⬇</button>
-        <button id="btn-fly" class="touch-btn" aria-label="Fliegen">🕊</button>
+        <button id="btn-jump" class="touch-btn" aria-label="Jump">⬆</button>
+        <button id="btn-sneak" class="touch-btn" aria-label="Sneak">⬇</button>
+        <button id="btn-fly" class="touch-btn" aria-label="Fly">🕊</button>
       </div>
 
       <div id="menu-buttons">
-        <button id="btn-inventory" class="touch-btn small" aria-label="Inventar">🎒</button>
-        <button id="btn-craft" class="touch-btn small" aria-label="Craften">🔨</button>
+        <button id="btn-inventory" class="touch-btn small" aria-label="Inventory">🎒</button>
+        <button id="btn-craft" class="touch-btn small" aria-label="Craft">🔨</button>
         <button id="btn-debug" class="touch-btn small" aria-label="Debug">ℹ</button>
-        <button id="btn-menu" class="touch-btn small" aria-label="Menü">⚙</button>
+        <button id="btn-menu" class="touch-btn small" aria-label="Menu">⚙</button>
       </div>
     </div>
   </div>
@@ -78,7 +78,7 @@
   <!-- ============================ Screens ============================ -->
   <div id="screens">
 
-    <!-- Hauptmenü -->
+    <!-- Main menu -->
     <div id="main-menu" class="screen visible">
       <div class="menu-backdrop" aria-hidden="true">
         <span class="menu-pixel menu-pixel-one"></span>
@@ -88,21 +88,21 @@
       </div>
       <div class="menu-panel main-panel">
         <section class="main-menu-hero" aria-labelledby="main-menu-title">
-          <div class="menu-kicker"><span class="menu-kicker-dot"></span> DEIN VOXEL-ABENTEUER</div>
-          <h1 id="main-menu-title" class="game-title">MINECRAFT<span>KLON</span></h1>
-          <p class="subtitle">Eine lebendige Welt. Unendlich viele Möglichkeiten.</p>
-          <div class="hero-features" aria-label="Spielmerkmale">
-            <span><i class="feature-mark"></i> Welten zum Erkunden</span>
-            <span><i class="feature-mark"></i> Bauen & Craften</span>
-            <span><i class="feature-mark"></i> PC & Handy</span>
+          <div class="menu-kicker"><span class="menu-kicker-dot"></span> YOUR VOXEL ADVENTURE</div>
+          <h1 id="main-menu-title" class="game-title">MINECRAFT<span>CLONE</span></h1>
+          <p class="subtitle">A living world. Endless possibilities.</p>
+          <div class="hero-features" aria-label="Game features">
+            <span><i class="feature-mark"></i> Worlds to Explore</span>
+            <span><i class="feature-mark"></i> Build & Craft</span>
+            <span><i class="feature-mark"></i> PC & Mobile</span>
           </div>
-          <div class="hero-note"><span aria-hidden="true">✦</span> Jeder Block ist der Anfang einer neuen Idee.</div>
+          <div class="hero-note"><span aria-hidden="true">✦</span> Every block is the start of a new idea.</div>
         </section>
 
-        <section class="main-menu-actions" aria-label="Spiel starten und Optionen">
-          <button id="btn-play" class="menu-btn primary play-menu-btn" aria-label="Spiel fortsetzen" disabled>
+        <section class="main-menu-actions" aria-label="Start game and options">
+          <button id="btn-play" class="menu-btn primary play-menu-btn" aria-label="Continue game" disabled>
             <span class="play-menu-icon" aria-hidden="true">▶</span>
-            <span class="play-menu-label">Spiel fortsetzen</span>
+            <span class="play-menu-label">Continue Game</span>
             <span class="play-menu-arrow" aria-hidden="true">→</span>
           </button>
           <p id="save-warning" class="save-warning" role="status" aria-live="polite" hidden></p>
@@ -110,220 +110,220 @@
           <div class="new-world-box">
             <div class="world-box-heading">
               <div>
-                <span class="menu-eyebrow">ABENTEUER STARTEN</span>
-                <h3>Neue Welt</h3>
+                <span class="menu-eyebrow">START YOUR ADVENTURE</span>
+                <h3>New World</h3>
               </div>
               <span class="world-box-icon" aria-hidden="true">▦</span>
             </div>
-            <p class="world-box-description">Lege deine Welt fest und mach sie zu deiner.</p>
+            <p class="world-box-description">Create your world and make it your own.</p>
             <div class="world-field-grid">
-              <label><span class="field-label-title">Seed <span class="field-hint">(leer = zufällig)</span></span>
-                <input id="seed-input" type="text" placeholder="z. B. 12345 oder Wald" maxlength="32" autocomplete="off">
+              <label><span class="field-label-title">Seed <span class="field-hint">(leave blank for random)</span></span>
+                <input id="seed-input" type="text" placeholder="e.g. 12345 or Forest" maxlength="32" autocomplete="off">
               </label>
-              <label>Welttyp
+              <label>World Type
                 <select id="world-type">
-                  <option value="normal">Normal · Berge & Höhlen</option>
-                  <option value="flat">Flach · Bauwelt</option>
+                  <option value="normal">Normal · Mountains & Caves</option>
+                  <option value="flat">Flat · Building World</option>
                 </select>
               </label>
-              <label>Spielmodus
+              <label>Game Mode
                 <select id="game-mode">
-                  <option value="survival">Überleben</option>
-                  <option value="creative">Kreativ</option>
+                  <option value="survival">Survival</option>
+                  <option value="creative">Creative</option>
                 </select>
               </label>
               <label class="check-label">
-                <input id="peaceful-mode" type="checkbox" checked> Friedlich · keine Monster
+                <input id="peaceful-mode" type="checkbox" checked> Peaceful · no monsters
               </label>
             </div>
-            <button id="btn-new-world" class="menu-btn new-world-button"><span aria-hidden="true">✦</span> Neue Welt starten</button>
+            <button id="btn-new-world" class="menu-btn new-world-button"><span aria-hidden="true">✦</span> Start New World</button>
           </div>
 
           <div class="menu-utility-grid">
             <button id="btn-open-settings" class="menu-btn utility-button">
-              <span class="utility-icon" aria-hidden="true">⚙</span><span><strong>Einstellungen</strong><small>Grafik & Audio</small></span>
+              <span class="utility-icon" aria-hidden="true">⚙</span><span><strong>Settings</strong><small>Graphics & Audio</small></span>
             </button>
             <button id="btn-help" class="menu-btn utility-button">
-              <span class="utility-icon" aria-hidden="true">?</span><span><strong>Steuerung</strong><small>Hilfe & Tasten</small></span>
+              <span class="utility-icon" aria-hidden="true">?</span><span><strong>Controls</strong><small>Help & Shortcuts</small></span>
             </button>
             <button id="btn-selftest" class="menu-btn utility-button">
-              <span class="utility-icon" aria-hidden="true">♥</span><span><strong>Selbstdiagnose</strong><small>Gerät testen</small></span>
+              <span class="utility-icon" aria-hidden="true">♥</span><span><strong>Self-Diagnostics</strong><small>Test Your Device</small></span>
             </button>
             <button id="btn-fullscreen-menu" class="menu-btn utility-button" type="button" aria-pressed="false">
-              <span class="utility-icon" aria-hidden="true">⛶</span><span><strong>Vollbild</strong><small>Bildschirm füllen</small></span>
+              <span class="utility-icon" aria-hidden="true">⛶</span><span><strong>Fullscreen</strong><small>Fill the Screen</small></span>
             </button>
           </div>
 
           <section class="save-backup-tools" aria-labelledby="save-backup-title">
             <div class="save-backup-copy">
-              <h2 id="save-backup-title">Spielstand sichern</h2>
-              <p>Lade eine Kopie herunter oder stelle eine JSON-Sicherung wieder her.</p>
+              <h2 id="save-backup-title">Back Up Your Save</h2>
+              <p>Download a copy or restore a JSON backup.</p>
             </div>
             <div class="save-backup-actions">
-              <button id="btn-export-save" class="menu-btn" type="button" disabled>↓ Sicherung herunterladen</button>
-              <button id="btn-import-save" class="menu-btn" type="button">↑ Sicherung importieren</button>
-              <input id="save-import-file" type="file" accept=".json,application/json" aria-label="JSON-Spielstand auswählen" hidden>
+              <button id="btn-export-save" class="menu-btn" type="button" disabled>↓ Download Backup</button>
+              <button id="btn-import-save" class="menu-btn" type="button">↑ Import Backup</button>
+              <input id="save-import-file" type="file" accept=".json,application/json" aria-label="Select JSON save file" hidden>
             </div>
             <p id="save-backup-feedback" class="save-backup-feedback" role="status" aria-live="polite"></p>
           </section>
         </section>
 
-        <p class="hint"><span aria-hidden="true">✦</span> Öffne das Spiel auf Handy oder Computer – die Steuerung passt sich automatisch an.</p>
+        <p class="hint"><span aria-hidden="true">✦</span> Open the game on mobile or desktop—the controls adapt automatically.</p>
       </div>
     </div>
 
     <!-- Pause -->
     <div id="pause-menu" class="screen">
       <div class="menu-panel">
-        <h2>Pause</h2>
+        <h2>Paused</h2>
         <div class="menu-buttons-col">
-          <button id="btn-resume" class="menu-btn primary">▸ Weiterspielen</button>
-          <button id="btn-settings-from-pause" class="menu-btn">⚙ Einstellungen</button>
-          <button id="btn-save" class="menu-btn">💾 Spiel speichern</button>
+          <button id="btn-resume" class="menu-btn primary">▸ Resume Game</button>
+          <button id="btn-settings-from-pause" class="menu-btn">⚙ Settings</button>
+          <button id="btn-save" class="menu-btn">💾 Save Game</button>
           <p id="save-feedback" class="save-feedback" role="status" aria-live="polite"></p>
-          <button id="btn-quit" class="menu-btn">🏠 Speichern & zum Hauptmenü</button>
+          <button id="btn-quit" class="menu-btn">🏠 Save & Return to Main Menu</button>
         </div>
       </div>
     </div>
 
-    <!-- Einstellungen -->
+    <!-- Settings -->
     <div id="settings-screen" class="screen">
       <div class="menu-panel wide settings-panel">
         <header class="settings-header">
           <div>
-            <div class="settings-kicker"><span class="settings-kicker-mark" aria-hidden="true"></span> WERKBANK · SPIELOPTIONEN</div>
-            <h2><span class="settings-title-icon" aria-hidden="true">⚙</span> Einstellungen</h2>
+            <div class="settings-kicker"><span class="settings-kicker-mark" aria-hidden="true"></span> SETTINGS · GAME OPTIONS</div>
+            <h2><span class="settings-title-icon" aria-hidden="true">⚙</span> Settings</h2>
           </div>
-          <span class="settings-header-badge">OPTIONEN</span>
+          <span class="settings-header-badge">OPTIONS</span>
         </header>
-        <p class="settings-intro">Passe Welt, Steuerung und Spielgefühl an. Änderungen werden direkt übernommen.</p>
+        <p class="settings-intro">Customize the world, controls, and game feel. Changes apply immediately.</p>
 
         <div class="settings-grid">
           <section class="settings-group" aria-labelledby="settings-world-title">
-            <h3 id="settings-world-title" class="settings-group-title"><span class="settings-group-index">01</span> Welt & Grafik</h3>
+            <h3 id="settings-world-title" class="settings-group-title"><span class="settings-group-index">01</span> World & Graphics</h3>
             <div class="settings-group-controls">
               <label class="setting-control">
-                <span class="setting-title-row"><span>Renderdistanz</span><span id="setting-render-distance-value" class="val"></span></span>
+                <span class="setting-title-row"><span>Render Distance</span><span id="setting-render-distance-value" class="val"></span></span>
                 <input id="setting-render-distance" type="range" min="2" max="10" step="1">
-                <span class="setting-help">Mehr Chunks zeigen mehr Welt, brauchen aber mehr Leistung.</span>
+                <span class="setting-help">More chunks show more of the world but require more processing power.</span>
               </label>
               <label class="setting-control">
-                <span class="setting-title-row"><span>Sichtfeld (FOV)</span><span id="setting-fov-value" class="val"></span></span>
+                <span class="setting-title-row"><span>Field of View (FOV)</span><span id="setting-fov-value" class="val"></span></span>
                 <input id="setting-fov" type="range" min="60" max="110" step="1">
-                <span class="setting-help">Bestimmt, wie weit der Blickwinkel ist.</span>
+                <span class="setting-help">Controls how wide your field of view is.</span>
               </label>
               <label class="setting-control">
-                <span class="setting-title-row"><span>Tageslänge</span><span id="setting-day-length-value" class="val"></span></span>
+                <span class="setting-title-row"><span>Day Length</span><span id="setting-day-length-value" class="val"></span></span>
                 <input id="setting-day-length" type="range" min="0" max="1800" step="60">
-                <span class="setting-help">Sekunden pro Spieltag; 0 schaltet den Zyklus aus.</span>
+                <span class="setting-help">Seconds per in-game day; 0 disables the cycle.</span>
               </label>
               <label class="setting-control">
-                <span class="setting-title-row"><span>Partikel</span><span class="setting-tag">EFFEKTE</span></span>
+                <span class="setting-title-row"><span>Particles</span><span class="setting-tag">EFFECTS</span></span>
                 <select id="setting-particles">
-                  <option value="high">Viele Partikel</option>
-                  <option value="low">Wenige Partikel</option>
+                  <option value="high">Many particles</option>
+                  <option value="low">Few particles</option>
                 </select>
-                <span class="setting-help">Weniger Effekte können auf Handys flüssiger laufen.</span>
+                <span class="setting-help">Fewer effects can improve performance on mobile devices.</span>
               </label>
             </div>
           </section>
 
           <section class="settings-group" aria-labelledby="settings-controls-title">
-            <h3 id="settings-controls-title" class="settings-group-title"><span class="settings-group-index">02</span> Steuerung</h3>
+            <h3 id="settings-controls-title" class="settings-group-title"><span class="settings-group-index">02</span> Controls</h3>
             <div class="settings-group-controls">
               <label class="setting-control">
-                <span class="setting-title-row"><span>Maus-/Blickempfindlichkeit</span><span id="setting-sensitivity-value" class="val"></span></span>
+                <span class="setting-title-row"><span>Mouse/Look Sensitivity</span><span id="setting-sensitivity-value" class="val"></span></span>
                 <input id="setting-sensitivity" type="range" min="0.0008" max="0.009" step="0.0002">
-                <span class="setting-help">Gilt für Maus und Blickwischen am Handy.</span>
+                <span class="setting-help">Applies to mouse movement and swipe-to-look on mobile.</span>
               </label>
               <label class="setting-toggle">
                 <input id="setting-invert-y" type="checkbox">
-                <span class="setting-toggle-copy"><strong>Y-Achse invertieren</strong><small>Nach oben ziehen blickt nach unten.</small></span>
+                <span class="setting-toggle-copy"><strong>Invert Y-Axis</strong><small>Dragging upward looks downward.</small></span>
               </label>
               <label class="setting-toggle">
                 <input id="setting-reduced-motion" type="checkbox">
-                <span class="setting-toggle-copy"><strong>Kamerabewegung reduzieren</strong><small>Deaktiviert Kopf-Bobbing und den Sprint-Zoom.</small></span>
+                <span class="setting-toggle-copy"><strong>Reduce Camera Motion</strong><small>Disables head bobbing and the sprint zoom.</small></span>
               </label>
             </div>
           </section>
 
           <section class="settings-group settings-group-wide" aria-labelledby="settings-game-title">
-            <h3 id="settings-game-title" class="settings-group-title"><span class="settings-group-index">03</span> Spiel & Ton</h3>
+            <h3 id="settings-game-title" class="settings-group-title"><span class="settings-group-index">03</span> Game & Audio</h3>
             <div class="settings-group-controls">
               <label class="setting-control">
-                <span class="setting-title-row"><span>Lautstärke</span><span id="setting-volume-value" class="val"></span></span>
+                <span class="setting-title-row"><span>Volume</span><span id="setting-volume-value" class="val"></span></span>
                 <input id="setting-volume" type="range" min="0" max="1" step="0.05">
-                <span class="setting-help">Lautstärke der Spielgeräusche.</span>
+                <span class="setting-help">Volume of in-game sound effects.</span>
               </label>
               <label class="setting-toggle">
                 <input id="setting-debug" type="checkbox">
-                <span class="setting-toggle-copy"><strong>Debug-Infos</strong><small>Zusätzliche Daten mit F3 anzeigen.</small></span>
+                <span class="setting-toggle-copy"><strong>Debug Info</strong><small>Show additional data with F3.</small></span>
               </label>
               <label class="setting-toggle">
                 <input id="setting-autosave" type="checkbox" checked>
-                <span class="setting-toggle-copy"><strong>Automatisch speichern</strong><small>Spielstand regelmäßig sichern.</small></span>
+                <span class="setting-toggle-copy"><strong>Autosave</strong><small>Back up your save regularly.</small></span>
               </label>
               <label class="setting-control">
-                <span class="setting-title-row"><span>Speicherintervall</span><span id="setting-autosave-interval-value" class="val"></span></span>
+                <span class="setting-title-row"><span>Save Interval</span><span id="setting-autosave-interval-value" class="val"></span></span>
                 <input id="setting-autosave-interval" type="range" min="10" max="3600" step="10">
-                <span class="setting-help">Alle 10 Sekunden bis 60 Minuten; gilt nur bei aktiviertem Autospeichern.</span>
+                <span class="setting-help">From 10 seconds to 60 minutes; only applies when autosave is enabled.</span>
               </label>
             </div>
           </section>
         </div>
 
         <div class="settings-actions">
-          <button id="btn-settings-back" class="menu-btn primary">← Zurück</button>
-          <button id="btn-reset-world" class="menu-btn danger">⚠ Welt zurücksetzen</button>
-          <button id="btn-delete-save" class="menu-btn danger">🗑 Spielstand löschen</button>
+          <button id="btn-settings-back" class="menu-btn primary">← Back</button>
+          <button id="btn-reset-world" class="menu-btn danger">⚠ Reset World</button>
+          <button id="btn-delete-save" class="menu-btn danger">🗑 Delete Save</button>
         </div>
       </div>
     </div>
 
-    <!-- Inventar -->
+    <!-- Inventory -->
     <div id="inventory-screen" class="screen">
       <div class="menu-panel wide inv-panel">
         <div class="inv-header">
-          <h2 id="inventory-title">Inventar & Crafting</h2>
-          <button id="btn-close-inventory" class="menu-btn small-btn">✕ Schließen (E)</button>
+          <h2 id="inventory-title">Inventory & Crafting</h2>
+          <button id="btn-close-inventory" class="menu-btn small-btn">✕ Close (E)</button>
         </div>
         <div id="inventory-body"></div>
       </div>
     </div>
 
-    <!-- Tod -->
+    <!-- Death -->
     <div id="death-screen" class="screen">
       <div class="menu-panel death-panel">
-        <h2 class="death-title">Du bist gestorben!</h2>
+        <h2 class="death-title">You Died!</h2>
         <p id="death-stats"></p>
-        <button id="btn-respawn" class="menu-btn primary">↻ Wiederbeleben</button>
+        <button id="btn-respawn" class="menu-btn primary">↻ Respawn</button>
       </div>
     </div>
 
-    <!-- Hilfe -->
+    <!-- Help -->
     <div id="help-screen" class="screen">
       <div class="menu-panel wide">
-        <h2>Steuerung & Hilfe</h2>
+        <h2>Controls & Help</h2>
         <div id="help-content"></div>
-        <button id="btn-help-back" class="menu-btn primary">← Zurück</button>
+        <button id="btn-help-back" class="menu-btn primary">← Back</button>
       </div>
     </div>
 
-    <!-- Laden -->
+    <!-- Loading -->
     <div id="loading-screen" class="screen">
       <div class="menu-panel">
-        <h2 id="loading-text">Welt wird generiert…</h2>
+        <h2 id="loading-text">Generating World…</h2>
         <div class="loading-bar"><div class="loading-fill"></div></div>
-        <p class="hint">Chunks, Höhlen, Bäume und mehr entstehen gerade prozedural.</p>
+        <p class="hint">Chunks, caves, trees, and more are being generated procedurally.</p>
       </div>
     </div>
 
-    <!-- Selbstdiagnose -->
+    <!-- Self-diagnostics -->
     <div id="selftest-screen" class="screen">
       <div class="menu-panel wide">
-        <h2>Selbstdiagnose</h2>
-        <div id="selftest-results"><p>Diagnose läuft…</p></div>
-        <button id="btn-selftest-back" class="menu-btn primary">← Zurück</button>
+        <h2>Self-Diagnostics</h2>
+        <div id="selftest-results"><p>Running diagnostics…</p></div>
+        <button id="btn-selftest-back" class="menu-btn primary">← Back</button>
       </div>
     </div>
 

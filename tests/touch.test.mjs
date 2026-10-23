@@ -1,14 +1,14 @@
-// touch.test.mjs — Touch-Steuerung testen: Joystick, Look-Drag, Buttons, Doppelsprung.
+// touch.test.mjs — Test touch controls: joystick, look drag, buttons, and double jump.
 import { TouchControls, isTouchDevice, markTouchEvent, wasRecentTouch, screenRayDirection } from '../src/core/touch.js';
 
 let passed = 0;
 let failed = 0;
 function ok(cond, msg) {
   if (cond) passed++;
-  else { failed++; console.error('FEHL:', msg); }
+  else { failed++; console.error('FAIL:', msg); }
 }
 
-// DOM-Stubs mit Event-Capture
+// DOM stubs with event capture
 function makeEl() {
   const listeners = {};
   const classes = new Set();
@@ -75,34 +75,34 @@ const touch = new TouchControls(els, {
   sensitivity: 0.004,
   onAction: (name) => actions.push(name),
 });
-ok(touch._lastJumpTap === -Infinity, 'Erster Sprung kann nicht als Doppeltipp zählen');
+ok(touch._lastJumpTap === -Infinity, 'The first jump cannot count as a double tap');
 
 // ---- Joystick --------------------------------------------------------------
 els.joystickZone.dispatch('touchstart', makeEvent([{ identifier: 1, clientX: 100, clientY: 300 }]));
 els.joystickZone.dispatch('touchmove', makeEvent([{ identifier: 1, clientX: 100 + 58, clientY: 300 }]));
 let m = touch.movement();
-ok(Math.abs(m.right - 1) < 0.01, `Joystick rechts = ${m.right.toFixed(2)} (≈1)`);
-ok(Math.abs(m.forward) < 0.01, `Joystick vorwärts = ${m.forward.toFixed(2)} (≈0)`);
+ok(Math.abs(m.right - 1) < 0.01, `Joystick right = ${m.right.toFixed(2)} (≈1)`);
+ok(Math.abs(m.forward) < 0.01, `Joystick forward = ${m.forward.toFixed(2)} (≈0)`);
 
 els.joystickZone.dispatch('touchmove', makeEvent([{ identifier: 1, clientX: 100, clientY: 300 - 58 }]));
 m = touch.movement();
-ok(Math.abs(m.forward - 1) < 0.01, `Joystick vorwärts = ${m.forward.toFixed(2)} (≈1)`);
+ok(Math.abs(m.forward - 1) < 0.01, `Joystick forward = ${m.forward.toFixed(2)} (≈1)`);
 
-// über die Grenze hinaus begrenzen
+// Clamp beyond the boundary
 els.joystickZone.dispatch('touchmove', makeEvent([{ identifier: 1, clientX: 100 + 300, clientY: 300 - 300 }]));
 m = touch.movement();
 ok(Math.hypot(m.right, m.forward) <= 1.02, `Joystick begrenzt (len=${Math.hypot(m.right, m.forward).toFixed(2)})`);
-ok(m.sprint === true, 'Joystick voll ausgelenkt → Sprint');
+ok(m.sprint === true, 'Joystick fully deflected → sprint');
 
 els.joystickZone.dispatch('touchend', makeEvent([{ identifier: 1, clientX: 0, clientY: 0 }]));
 m = touch.movement();
-ok(m.right === 0 && m.forward === 0, 'Joystick zurückgesetzt nach Loslassen');
+ok(m.right === 0 && m.forward === 0, 'Joystick resets after release');
 
 els.joystickZone.dispatch('touchstart', makeEvent([{ identifier: 13, clientX: 80, clientY: 500 }]));
 await new Promise((r) => setTimeout(r, 160));
 const joystickMine = touch.minePoint();
 ok(joystickMine?.x === 80 && joystickMine?.y === 500,
-  'Ruhiger Long-Press funktioniert auch links neben dem Joystick-Knopf');
+  'Stationary long press also works to the left of the joystick knob');
 els.joystickZone.dispatch('touchend', makeEvent([{ identifier: 13, clientX: 80, clientY: 500 }]));
 
 // ---- Look-Drag -------------------------------------------------------------
@@ -112,13 +112,13 @@ const look = touch.consumeLook();
 ok(Math.abs(look.x - 40 * 0.004) < 0.001, `Look-Delta X (${look.x.toFixed(4)})`);
 ok(Math.abs(look.y - 10 * 0.004) < 0.001, `Look-Delta Y (${look.y.toFixed(4)})`);
 const look2 = touch.consumeLook();
-ok(look2.x === 0 && look2.y === 0, 'Look-Delta wird konsumiert');
+ok(look2.x === 0 && look2.y === 0, 'Look delta is consumed');
 els.lookZone.dispatch('touchend', makeEvent([{ identifier: 2, clientX: 340, clientY: 110 }]));
 els.lookZone.dispatch('touchmove', makeEvent([{ identifier: 2, clientX: 400, clientY: 100 }]));
 const look3 = touch.consumeLook();
-ok(look3.x === 0, 'Kein Look nach Touch-Ende');
+ok(look3.x === 0, 'No look movement after touch ends');
 
-// Bildschirmstrahl: Mittelpunkt entspricht Blickrichtung, Randpunkt wird versetzt.
+// Screen ray: center matches look direction; edge points are offset.
 const rayPlayer = {
   yaw: 0,
   pitch: 0,
@@ -126,75 +126,75 @@ const rayPlayer = {
 };
 const centerRay = screenRayDirection(rayPlayer, { x: 195, y: 422 }, 390, 844, 75);
 ok(Math.abs(centerRay.x) < 0.001 && Math.abs(centerRay.y) < 0.001 && centerRay.z < -0.999,
-  'Bildschirmmitte zielt geradeaus');
+  'Screen center aims straight ahead');
 const upperRightRay = screenRayDirection(rayPlayer, { x: 292.5, y: 211 }, 390, 844, 75);
 ok(upperRightRay.x > 0 && upperRightRay.y > 0 && upperRightRay.z < 0,
-  'Touchposition oben rechts erzeugt korrekten Weltstrahl');
+  'Top-right touch position produces the correct world ray');
 ok(Math.abs(Math.hypot(upperRightRay.x, upperRightRay.y, upperRightRay.z) - 1) < 0.001,
-  'Touch-Strahl ist normalisiert');
+  'Touch ray is normalized');
 
-// Long-Press zum Abbauen (ab 140 ms); ein Wisch bleibt reine Blicksteuerung.
+// Long press to mine (after 140 ms); swiping remains purely look control.
 els.lookZone.dispatch('touchstart', makeEvent([{ identifier: 12, clientX: 280, clientY: 250 }]));
 await new Promise((r) => setTimeout(r, 160));
 const minePoint = touch.minePoint();
-ok(minePoint?.x === 280 && minePoint?.y === 250, 'Stillhalten aktiviert Mobile-Long-Press');
+ok(minePoint?.x === 280 && minePoint?.y === 250, 'Holding still activates mobile long press');
 els.lookZone.dispatch('touchmove', makeEvent([{ identifier: 12, clientX: 300, clientY: 250 }]));
-ok(touch.minePoint() === null, 'Wischen dreht Blick, löst keinen Abbau aus');
+ok(touch.minePoint() === null, 'Swiping rotates the view without triggering mining');
 els.lookZone.dispatch('touchend', makeEvent([{ identifier: 12, clientX: 300, clientY: 250 }]));
-ok(touch.minePoint() === null, 'Loslassen beendet Mobile-Long-Press');
+ok(touch.minePoint() === null, 'Releasing ends mobile long press');
 
 // ---- Buttons ---------------------------------------------------------------
 els.btnAttack.dispatch('touchstart', makeEvent([{ identifier: 3, clientX: 10, clientY: 10 }]));
-ok(touch.attack === true, 'Angriff gehalten');
+ok(touch.attack === true, 'Attack held');
 let pressed = touch.consumePressed();
-ok(pressed.attack === true, 'attackPressed gesetzt');
+ok(pressed.attack === true, 'attackPressed set');
 els.btnAttack.dispatch('touchend', makeEvent([{ identifier: 3, clientX: 10, clientY: 10 }]));
-ok(touch.attack === false, 'Angriff losgelassen');
+ok(touch.attack === false, 'Attack released');
 
 els.btnPlace.dispatch('touchstart', makeEvent([{ identifier: 4, clientX: 10, clientY: 10 }]));
 els.btnPlace.dispatch('touchend', makeEvent([{ identifier: 4, clientX: 10, clientY: 10 }]));
 pressed = touch.consumePressed();
-ok(pressed.use === true, 'Platzieren ausgelöst');
+ok(pressed.use === true, 'Place triggered');
 
-// Sprung + Doppelsprung (Fliegen)
+// Jump + double jump (fly)
 const doubleJumpsBefore = actions.filter((action) => action === 'doubleJump').length;
 els.btnJump.dispatch('touchstart', makeEvent([{ identifier: 5, clientX: 10, clientY: 10 }]));
-ok(touch.jump === true, 'Sprung gehalten');
+ok(touch.jump === true, 'Jump held');
 ok(actions.filter((action) => action === 'doubleJump').length === doubleJumpsBefore,
-  'Erster Sprung nach dem Laden schaltet Fliegen nicht versehentlich ein');
+  'The first jump after loading does not accidentally enable flight');
 els.btnJump.dispatch('touchend', makeEvent([{ identifier: 5, clientX: 10, clientY: 10 }]));
-ok(touch.jump === false, 'Sprung losgelassen');
-// Zweiter Tap innerhalb von 320ms
+ok(touch.jump === false, 'Jump released');
+// Second tap within 320 ms
 els.btnJump.dispatch('touchstart', makeEvent([{ identifier: 6, clientX: 10, clientY: 10 }]));
 ok(actions.filter((action) => action === 'doubleJump').length === doubleJumpsBefore + 1,
-  'Doppelsprung erkannt');
+  'Double jump detected');
 
-// Sneak-Toggle
+// Sneak toggle
 els.btnSneak.dispatch('touchstart', makeEvent([{ identifier: 7, clientX: 10, clientY: 10 }]));
-ok(touch.sneak === true && els.btnSneak.classList.contains('toggled'), 'Schleichen an und als Toggle sichtbar');
+ok(touch.sneak === true && els.btnSneak.classList.contains('toggled'), 'Sneaking enabled and visibly toggled');
 els.btnSneak.dispatch('touchstart', makeEvent([{ identifier: 8, clientX: 10, clientY: 10 }]));
-ok(touch.sneak === false && !els.btnSneak.classList.contains('toggled'), 'Schleichen aus (Toggle)');
+ok(touch.sneak === false && !els.btnSneak.classList.contains('toggled'), 'Sneaking disabled (toggle)');
 touch.setSneak(true);
 touch.setSneak(false);
-ok(!touch.sneak && !els.btnSneak.classList.contains('toggled'), 'Flugmodus kann Sneak-Toggle zuverlässig zurücksetzen');
+ok(!touch.sneak && !els.btnSneak.classList.contains('toggled'), 'Flight mode reliably resets the sneak toggle');
 
-// Fly-Button
+// Fly button
 els.btnFly.dispatch('touchstart', makeEvent([{ identifier: 9, clientX: 10, clientY: 10 }]));
-ok(actions.includes('fly'), 'Fliegen-Button ausgelöst');
+ok(actions.includes('fly'), 'Fly button triggered');
 
-// Inventar & Menü
+// Inventory & menu
 els.btnInventory.dispatch('touchstart', makeEvent([{ identifier: 10, clientX: 10, clientY: 10 }]));
 els.btnMenu.dispatch('touchstart', makeEvent([{ identifier: 11, clientX: 10, clientY: 10 }]));
-ok(actions.includes('inventory'), 'Inventar-Button');
-ok(actions.includes('menu'), 'Menü-Button');
+ok(actions.includes('inventory'), 'Inventory button');
+ok(actions.includes('menu'), 'Menu button');
 
-// ---- Touch/Emulated-Maus ---------------------------------------------------
+// ---- Touch/emulated mouse ---------------------------------------------------
 markTouchEvent();
-ok(wasRecentTouch() === true, 'wasRecentTouch nach markTouchEvent');
+ok(wasRecentTouch() === true, 'wasRecentTouch after markTouchEvent');
 await new Promise((r) => setTimeout(r, 750));
-ok(wasRecentTouch() === false, 'wasRecentTouch läuft ab');
+ok(wasRecentTouch() === false, 'wasRecentTouch expires');
 
-ok(isTouchDevice() === true, 'isTouchDevice erkennt Touch-Stubs');
+ok(isTouchDevice() === true, 'isTouchDevice detects touch stubs');
 
-console.log(`\n${passed} bestanden, ${failed} fehlgeschlagen`);
+console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

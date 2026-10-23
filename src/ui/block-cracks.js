@@ -1,27 +1,26 @@
-// block-cracks.js — feste, pixelgenaue Minecraft-artige Abbaustufen.
+// block-cracks.js — Fixed, pixel-perfect Minecraft-style mining stages.
 import * as THREE from '../../lib/three.module.js';
 
 const TEXTURE_SIZE = 16;
 const CRACK_CORE = 'rgba(28,28,28,0.96)';
 const CRACK_EDGE = 'rgba(112,112,112,0.82)';
 
-// Ein einziges handgezeichnetes Bruchnetz wird stufenweise erweitert. Dadurch
-// springen die Risse nicht zufällig über die Fläche und bleiben wie Minecraft
-// in jeder Stufe pixelgenau gleich.
+// A single hand-drawn crack network expands in stages, so cracks do not jump
+// randomly across the surface and remain pixel-identical at every stage.
 const CRACK_SEGMENTS = [
-  // Drei Pixel in der Mitte bilden den Startpunkt; von dort verzweigt das Netz.
+  // Three pixels in the center form the starting point, from which the network branches.
   { stage: 0, points: [[7, 7], [8, 8], [9, 7]] },
-  // Die ersten Stufen wachsen in zwei diagonale Richtungen.
+  // The first stages grow in two diagonal directions.
   { stage: 1, points: [[9, 7], [10, 6], [11, 6]] },
   { stage: 2, points: [[7, 7], [6, 6], [5, 6]] },
   { stage: 3, points: [[11, 6], [12, 5], [13, 5]] },
   { stage: 4, points: [[5, 6], [4, 5], [3, 5]] },
-  // Danach kommen verbunden eine obere, eine linke untere und eine rechte untere Richtung hinzu.
+  // Connected upper, lower-left, and lower-right branches are added next.
   { stage: 5, points: [[8, 8], [8, 7], [8, 6]] },
   { stage: 6, points: [[8, 8], [7, 9], [6, 10]] },
   { stage: 7, points: [[6, 10], [5, 10], [4, 11]] },
   { stage: 8, points: [[8, 8], [9, 9], [10, 10]] },
-  // Die letzte Stufe verlängert den Südost-Arm und öffnet einen kurzen Süd-Arm.
+  // The final stage extends the southeast arm and adds a short south arm.
   { stage: 9, points: [[10, 10], [11, 10], [12, 11]] },
   { stage: 9, points: [[8, 8], [8, 9], [8, 10]] },
 ];
@@ -52,8 +51,8 @@ function renderStage(ctx, stage) {
     }
   }
 
-  // Ein grauer Pixel neben dem dunklen Kern ergibt den körnigen, scharfkantigen
-  // Bruch-Look der Vanilla-Texturen. Es werden nur 1×1-Pixel gesetzt.
+  // A gray pixel beside the dark core creates the grainy, sharp-edged vanilla
+  // crack look. Only 1×1 pixels are drawn.
   ctx.fillStyle = CRACK_EDGE;
   for (const pixel of edgePixels) {
     if (corePixels.has(pixel)) continue;
@@ -78,7 +77,7 @@ export class BlockCracks {
     this.texture.generateMipmaps = false;
     this.texture.colorSpace = THREE.SRGBColorSpace;
 
-    // Vollflächige, coplanare Overlays; Tiefenbias löst Z-Fighting ohne Luftspalt.
+    // Full-face coplanar overlays; depth bias prevents z-fighting without an air gap.
     this.geometry = new THREE.PlaneGeometry(1, 1);
     this.material = new THREE.MeshBasicMaterial({
       map: this.texture,
@@ -119,7 +118,7 @@ export class BlockCracks {
     this.stage = -1;
   }
 
-  /** Fortschritt 0..1 auf eine der zehn festen Abbaustufen abbilden. */
+  /** Map progress from 0 to 1 onto one of ten fixed mining stages. */
   update(hit, progress) {
     if (!hit || !Number.isFinite(hit.x) || !Number.isFinite(hit.y) || !Number.isFinite(hit.z)
       || !Number.isFinite(progress) || progress <= 0) {

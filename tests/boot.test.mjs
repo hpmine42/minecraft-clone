@@ -1,10 +1,10 @@
-// boot.test.mjs — Startet main.js komplett mit DOM-Stubs (Boot-Smoke-Test).
+// boot.test.mjs — Boot main.js completely with DOM stubs (boot smoke test).
 import { pathToFileURL } from 'node:url';
 import { BLOCK } from '../src/world/blocks.js';
 import { createFurnaceState } from '../src/player/furnace.js';
 import { createChestState } from '../src/player/containers.js';
 
-// ---- Browser-Stubs (wie modules.test, aber erweiterter) --------------------
+// ---- Browser stubs (like modules.test, but extended) --------------------
 const ctxStub = () => new Proxy({}, {
   get(target, prop) {
     if (prop === 'createImageData') return (w, h) => ({ data: new Uint8ClampedArray(w * h * 4), width: w, height: h });
@@ -14,7 +14,7 @@ const ctxStub = () => new Proxy({}, {
   },
 });
 
-// WebGL-Stub für THREE.WebGLRenderer
+// WebGL stub for THREE.WebGLRenderer
 const GL_CONST_VALUES = {
   VERSION: 7938, RENDERER: 7937, VENDOR: 7936, SHADING_LANGUAGE_VERSION: 35724,
   MAX_TEXTURE_SIZE: 3379, MAX_VIEWPORT_DIMS: 3386,
@@ -139,7 +139,7 @@ Object.defineProperty(globalThis, 'navigator', {
   configurable: true,
 });
 globalThis.document = {
-  readyState: 'loading', // damit boot() nur über DOMContentLoaded läuft
+  readyState: 'loading', // so boot() runs only through DOMContentLoaded
   getElementById: (id) => {
     if (!elementsById.has(id)) elementsById.set(id, makeElement(id));
     return elementsById.get(id);
@@ -168,14 +168,14 @@ globalThis.requestAnimationFrame = (fn) => {
 };
 globalThis.cancelAnimationFrame = (id) => clearTimeout(id);
 
-// ---- main.js laden --------------------------------------------------------
+// ---- Load main.js --------------------------------------------------------
 await import('../src/main.js');
 const game = globalThis.window.__game;
 
-// DOM-Ready auslösen
+// Trigger DOM ready
 if (globalThis.window._domReady) globalThis.window._domReady();
 
-// Etwas laufen lassen
+// Let it run briefly
 await new Promise((r) => setTimeout(r, 400));
 
 let passed = 0;
@@ -185,61 +185,61 @@ const ok = (cond, msg) => {
   else { failed++; console.error(`✘ ${msg}`); }
 };
 
-ok(!!game, 'Spiel-Instanz vorhanden');
-ok(game.state === 'menu', `Zustand nach Boot: ${game.state} (erwartet menu)`);
-ok(!!game.engine, 'Engine initialisiert');
+ok(!!game, 'Game instance exists');
+ok(game.state === 'menu', `State after boot: ${game.state} (expected menu)`);
+ok(!!game.engine, 'Engine initialized');
 game.engine.updateSky(0, 3, 0.016, 0);
-ok(game.engine.dayFactor > 0.3 && game.engine.dayFactor < 0.4, 'Himmel startet am Sonnenaufgang');
+ok(game.engine.dayFactor > 0.3 && game.engine.dayFactor < 0.4, 'Sky starts at sunrise');
 game.engine.updateSky(0.25, 3, 0.016, 0);
-ok(game.engine.dayFactor === 1 && game.engine.isDay(), 'Sonnenstand mittags stimmt');
+ok(game.engine.dayFactor === 1 && game.engine.isDay(), 'Sun position is correct at noon');
 game.engine.updateSky(0.75, 3, 0.016, 0);
-ok(game.engine.dayFactor === 0 && !game.engine.isDay(), 'Nacht und Mob-Tageslogik stimmen überein');
-ok(!!game.engine.renderer, 'Renderer vorhanden');
-ok(!!game.atlasCanvas, 'Textur-Atlas erzeugt');
-ok(!!game.world || game.state === 'menu', 'Welt noch nicht nötig im Menü');
-ok(!!game.hud, 'HUD initialisiert');
-ok(!!game.menus, 'Menüs initialisiert');
-ok(game.menus.activeScreen === 'main-menu', `Hauptmenü sichtbar (${game.menus.activeScreen})`);
-ok(!!game.menuPreview?.root.visible && game.menuPreview.root.children.length >= 4, 'Texturiertes Voxel-Diorama im Hauptmenü sichtbar');
-ok(typeof game.startNewWorld === 'function', 'startNewWorld vorhanden');
+ok(game.engine.dayFactor === 0 && !game.engine.isDay(), 'Night and mob daylight logic agree');
+ok(!!game.engine.renderer, 'Renderer exists');
+ok(!!game.atlasCanvas, 'Texture atlas created');
+ok(!!game.world || game.state === 'menu', 'World not required yet in the menu');
+ok(!!game.hud, 'HUD initialized');
+ok(!!game.menus, 'Menus initialized');
+ok(game.menus.activeScreen === 'main-menu', `Main menu visible (${game.menus.activeScreen})`);
+ok(!!game.menuPreview?.root.visible && game.menuPreview.root.children.length >= 4, 'Textured voxel diorama visible in the main menu');
+ok(typeof game.startNewWorld === 'function', 'startNewWorld exists');
 
-// Neue Welt starten (asynchron über setTimeout)
+// Start a new world (asynchronously via setTimeout)
 document.getElementById('seed-input').value = '12345';
 document.getElementById('world-type').value = 'normal';
 document.getElementById('game-mode').value = 'survival';
 document.getElementById('peaceful-mode').checked = true;
 game.startNewWorld();
-ok(!game.menuPreview.root.visible, 'Menü-Diorama wird beim Weltstart ausgeblendet');
+ok(!game.menuPreview.root.visible, 'Menu diorama is hidden when the world starts');
 await new Promise((r) => setTimeout(r, 500));
-ok(game.state === 'playing', `Zustand nach Start: ${game.state}`);
-ok(!!game.world && game.world.chunks.size > 0, `Welt generiert (${game.world ? game.world.chunks.size : 0} Chunks)`);
+ok(game.state === 'playing', `State after start: ${game.state}`);
+ok(!!game.world && game.world.chunks.size > 0, `World generated (${game.world ? game.world.chunks.size : 0} chunks)`);
 ok(game.hud.els.worldStatus.style.display === 'block'
   && game.hud.els.worldStatus.textContent.includes('Y '),
-'Erkundungs-HUD zeigt Biom, Weltzeit, Wetter und Höhe');
+'Exploration HUD shows biome, world time, weather, and altitude');
 game.hud.update(0, game.player, true);
 ok(game.hud.els.heldItemView.style.display === 'block'
   && game.hud.els.heldItemIcon.style.visibility === 'visible',
-'Aktuell ausgewähltes Item wird als Pixel-Item in der Spielhand angezeigt');
-ok(!!game.mobs, 'Mob-Manager vorhanden');
+'Currently selected item appears as a pixel item in the player hand');
+ok(!!game.mobs, 'Mob manager exists');
 const autosaveIntervalInput = elementsById.get('setting-autosave-interval');
 ok(autosaveIntervalInput.value === 60
   && elementsById.get('setting-autosave-interval-value').textContent === '1 min',
-'Autosave-Intervall wird verständlich angezeigt und mit dem gespeicherten Standard vorbelegt');
+'Autosave interval is displayed clearly and prefilled with the saved default');
 game.autosaveTimer = 17;
 game.applySetting('autosaveInterval', 120);
 const autosaveIntervalApplied = game.settings.autosaveInterval === 120 && game.autosaveTimer === 0;
 game.applySetting('autosaveInterval', 60);
-ok(autosaveIntervalApplied, 'Änderungen des Autospeicher-Intervalls starten den Countdown neu');
+ok(autosaveIntervalApplied, 'Changing the autosave interval restarts the countdown');
 game.applySetting('particles', 'low');
 const lowParticleBudget = game.particles.maxParticles === 180;
 game.applySetting('particles', 'high');
 ok(lowParticleBudget && game.particles.maxParticles === 800,
-  'Partikelqualität-Einstellung ändert das aktive Effektbudget und stellt es wieder her');
+  'Particle quality setting changes and restores the active effect budget');
 game.applySetting('reduceMotion', true);
 const reducedMotionSaved = JSON.parse(localStorage.getItem('minecraft-klon-settings-v1'))?.reduceMotion === true;
 game.applySetting('reduceMotion', false);
 ok(reducedMotionSaved && game.settings.reduceMotion === false,
-'Kamerabewegung lässt sich reduzieren und die Einstellung wird gespeichert');
+'Camera motion can be reduced and the setting is saved');
 let f1Prevented = false;
 game.input._onKeyDown({ code: 'F1', repeat: false, preventDefault() { f1Prevented = true; } });
 game._onKey({ code: 'F1', repeat: false, preventDefault() {} });
@@ -247,27 +247,27 @@ const hudWasHidden = game.hud.hidden && game.hud.els.root.style.display === 'non
 game._onKey({ code: 'F1', repeat: false, preventDefault() {} });
 game.input._onKeyUp({ code: 'F1' });
 ok(f1Prevented && hudWasHidden && !game.hud.hidden,
-'F1 blendet das HUD für Screenshots aus und ein, ohne den Browser-Hilferuf zu öffnen');
-ok(!!game.interaction, 'Interaktion vorhanden');
-ok(game.player.position.y > 0, `Spieler positioniert (y=${game.player.position.y.toFixed(1)})`);
+'F1 toggles the HUD for screenshots without opening browser help');
+ok(!!game.interaction, 'Interaction exists');
+ok(game.player.position.y > 0, `Player positioned (y=${game.player.position.y.toFixed(1)})`);
 
-// Ein paar Frames Spiel-Loop
+// Run a few game-loop frames
 await new Promise((r) => setTimeout(r, 400));
-ok(game.player.health === 20, `Gesundheit intakt (${game.player.health})`);
-ok(game.world.stats().solidVerts > 0, `Terrain-Meshes gebaut (${game.world.stats().solidVerts} Vertices)`);
+ok(game.player.health === 20, `Health intact (${game.player.health})`);
+ok(game.world.stats().solidVerts > 0, `Terrain meshes built (${game.world.stats().solidVerts} vertices)`);
 
 // Pause / Resume
 game.pause();
-ok(game.state === 'paused', 'Pause funktioniert');
+ok(game.state === 'paused', 'Pause works');
 game.resume();
-ok(game.state === 'playing', 'Resume funktioniert');
+ok(game.state === 'playing', 'Resume works');
 
-// ---- Block abbauen & platzieren (echte Interaktion) -------------------------
+// ---- Mine & place blocks (real interaction) -------------------------
 {
   const p = game.player;
-  // Nach unten schauen und Boden anvisieren
+  // Look down and target the ground
   p.pitch = -Math.PI / 2 + 0.15;
-  const targetBefore = game.world.raycast(p.eyePosition(), p.lookDir(), 5.2);   ok(targetBefore !== null, `Abbau-Ziel gefunden (Block ${targetBefore?.id})`);
+  const targetBefore = game.world.raycast(p.eyePosition(), p.lookDir(), 5.2);   ok(targetBefore !== null, `Mining target found (block ${targetBefore?.id})`);
   const mobRaycast = game.mobs.raycastMob;
   game.mobs.raycastMob = () => null;
   game._updatePlaying(1 / 60);
@@ -277,52 +277,52 @@ ok(game.state === 'playing', 'Resume funktioniert');
     && Math.abs(game.blockOutline.mesh.position.x - visibleTarget.x - 0.5) < 0.001
     && Math.abs(game.blockOutline.mesh.position.y - visibleTarget.y - 0.5) < 0.001
     && Math.abs(game.blockOutline.mesh.position.z - visibleTarget.z - 0.5) < 0.001,
-  'Zielkontur erscheint ohne Angriff am tatsächlich anvisierten Block');
+  'Target outline appears without attacking on the actually targeted block');
   ok(game.hud.els.targetHint.style.display === 'block'
-    && game.hud.els.targetHint.textContent.includes('abbauen'),
-  'Anvisierte Blöcke erhalten einen kontextuellen Bedienhinweis');
+    && game.hud.els.targetHint.textContent.includes('mine'),
+  'Targeted blocks receive a contextual control hint');
 
-  // Kreativ: sofort im Test alles abbauen
+  // Creative: mine everything immediately in the test
   p.gamemode = 'creative';
   game.inventory.selected = 0;
   game.inventory.slots[0] = { id: BLOCK.COBBLESTONE, count: 64, dur: null };
 
-  // Abbauen (attack halten über Frames)
+  // Mining (hold attack across frames)
   for (let i = 0; i < 30; i++) {
     game.interaction.update(1 / 30, { attack: true, usePressed: false, pickPressed: false }, game.engine.camera);
     game.world.update(p.position.x, p.position.z, 2, 50);
   }
   const targetAfter = game.world.raycast(p.eyePosition(), p.lookDir(), 5.2);
   ok(targetAfter === null || targetAfter.y < targetBefore.y - 1 || targetAfter.id !== targetBefore.id,
-    'Block wurde abgebaut');
+    'Block was mined');
 
-  // Platzieren: Bruchstein ins Loch legen
+  // Placement: put cobblestone in the hole
   const place = game.interaction.update(1 / 30, { attack: false, usePressed: true, pickPressed: false }, game.engine.camera);
   game.world.update(p.position.x, p.position.z, 2, 50);
-  ok(true, 'Platzieren ohne Fehler');
+  ok(true, 'Placement completes without errors');
 }
 
-// Inventar öffnen/schließen und temporäre Cursor-/Craftingstapel sicher verwalten.
+// Open/close the inventory and safely manage temporary cursor/crafting stacks.
 game._onKey({ code: 'KeyE', repeat: false });
-ok(game.state === 'inventory', 'Taste E öffnet das Spielerinventar');
+ok(game.state === 'inventory', 'E opens the player inventory');
 ok(game.hud.els.heldItemView.style.display === 'none',
-'Spielhand-Item wird während des offenen Inventars ausgeblendet');
+'Held item is hidden while the inventory is open');
 const wheelBeforeInventory = game.input.wheelDelta;
 let inventoryWheelPrevented = false;
 game.input._onWheel({ deltaY: 1, preventDefault() { inventoryWheelPrevented = true; } });
 ok(!inventoryWheelPrevented && game.input.wheelDelta === wheelBeforeInventory,
-'Inventar-Mausrad bleibt für das Scrollen der Oberfläche frei');
+'Inventory mouse wheel remains available for scrolling the interface');
 game.inventory.setEquipment('offhand', { id: BLOCK.TORCH, count: 3, dur: null });
 game.menus.refreshInventory();
 ok(game.menus._characterItemIcons?.has(BLOCK.TORCH),
-'Charaktervorschau wird bei ausgerüsteten, definierten Items aktualisiert');
+'Character preview updates when defined items are equipped');
 game.menus.craftGrid[0] = { id: BLOCK.LOG, count: 1, dur: null };
 game.menus.heldStack = { id: BLOCK.SAND, count: 2, dur: null };
 const openInventorySave = game.saveNow();
 const openInventoryData = JSON.parse(localStorage.getItem('minecraft-klon-save-v1'));
 ok(openInventorySave && openInventoryData.inventoryUI.craftGrid[0]?.id === BLOCK.LOG
   && openInventoryData.inventoryUI.heldStack?.count === 2,
-'Autospeicher-Snapshot bewahrt auch Cursor- und Craftingstapel');
+'Autosave snapshot also preserves cursor and crafting stacks');
 const sandBeforeClose = game.inventory.count(BLOCK.SAND);
 const worldDropsBeforeClose = game.mobs.items.length;
 game._onKey({ code: 'Escape', repeat: false });
@@ -330,27 +330,27 @@ const cursorDropOnClose = game.mobs.items.slice(worldDropsBeforeClose)
   .some((item) => item.itemId === BLOCK.SAND && item.count === 2);
 ok(game.state === 'playing' && game.inventory.count(BLOCK.LOG) >= 1
   && game.inventory.count(BLOCK.SAND) === sandBeforeClose && cursorDropOnClose,
-'Inventar schließt, Craftingzutaten kehren zurück und Cursorstapel wird in die Welt geworfen');
+'Inventory closes, crafting ingredients return, and the cursor stack drops into the world');
 game.inventory.selected = 8;
 let gameplayWheelPrevented = false;
 game.input._onWheel({ deltaY: 1, preventDefault() { gameplayWheelPrevented = true; } });
 game._updatePlaying(0.001);
 ok(gameplayWheelPrevented && game.inventory.selected === 0,
-'Mausrad wechselt im Spiel durch die Hotbar und läuft am Ende herum');
+'Mouse wheel cycles through the hotbar in-game and wraps at the end');
 const selectedHotbarSlots = [];
 for (let digit = 1; digit <= 9; digit++) {
   game._onKey({ code: `Digit${digit}`, repeat: false });
   selectedHotbarSlots.push(game.inventory.selected);
 }
 ok(selectedHotbarSlots.join(',') === '0,1,2,3,4,5,6,7,8',
-'Tasten 1 bis 9 wählen die neun gemeinsamen Hotbar-Slots aus');
+'Keys 1 through 9 select the nine shared hotbar slots');
 game._onKey({ code: 'KeyE', repeat: false });
 const eOpenedInventory = game.state === 'inventory';
 game._onKey({ code: 'KeyE', repeat: false });
 ok(eOpenedInventory && game.state === 'playing',
-'Ein erneuter Druck auf E schließt das Inventar wieder');
+'Pressing E again closes the inventory');
 
-// Speichern / Laden inklusive positionierter Ofen- und Truheninhalte
+// Save/load including positioned furnace and chest contents
 game.world.furnaces.set('10,20,30', createFurnaceState({
   slots: [{ id: BLOCK.IRON_ORE, count: 2 }, { id: BLOCK.COAL, count: 1 }, null],
   progress: 3.5,
@@ -362,54 +362,54 @@ game.world.chests.set('11,20,30', createChestState({
 }));
 game._dropItems(BLOCK.SAND, 2);
 const saved = game.saveNow();
-ok(saved === true, 'Spiel speichern');
-ok(localStorage.getItem('minecraft-klon-save-v1') !== null, 'Spielstand im localStorage');
+ok(saved === true, 'Save game');
+ok(localStorage.getItem('minecraft-klon-save-v1') !== null, 'Save exists in localStorage');
 game.quitToMenu();
-ok(game.state === 'menu', 'Zurück im Hauptmenü');
+ok(game.state === 'menu', 'Back in the main menu');
 game.continueGame();
 await new Promise((r) => setTimeout(r, 500));
-ok(game.state === 'playing', 'Spiel fortgesetzt');
-ok(game.world.chunks.size > 0, `Welt nach Laden da (${game.world.chunks.size} Chunks)`);
+ok(game.state === 'playing', 'Game continued');
+ok(game.world.chunks.size > 0, `World available after loading (${game.world.chunks.size} chunks)`);
 ok(game.world.furnaces.get('10,20,30')?.slots[0]?.count === 2
   && game.world.furnaces.get('10,20,30')?.progress >= 3.5,
-'Ofeninhalt und Schmelzfortschritt werden gespeichert');
+'Furnace contents and smelting progress are saved');
 ok(game.world.chests.get('11,20,30')?.slots[0]?.count === 6,
-'Truheninhalt wird gespeichert');
+'Chest contents are saved');
 ok(game.inventory.getEquipment('offhand')?.id === BLOCK.TORCH
   && game.inventory.getEquipment('offhand')?.count === 3,
-'Ausrüstungs-Nebenhand wird mit der Welt gespeichert und geladen');
+'Equipment off-hand is saved and loaded with the world');
 ok(game.mobs.items.some((item) => item.itemId === BLOCK.SAND && item.count === 2),
-'Welt-Drops bleiben nach Speichern und Laden erhalten');
+'World drops persist through save and load');
 
-// Tastatur: Strg sprintet ohne gleichzeitig zu schleichen, beide Strg-Tasten funktionieren.
+// Keyboard: Ctrl sprints without sneaking; both Ctrl keys work.
 game.input.keys.clear();
 game.input.keys.add('ControlLeft');
 let keyMove = game.input.movement();
-ok(keyMove.sprint && !keyMove.sneak, 'Linkes Strg sprintet, ohne versehentlich abzusteigen/schleichen');
+ok(keyMove.sprint && !keyMove.sneak, 'Left Ctrl sprints without accidentally descending/sneaking');
 game.input.keys.clear();
 game.input.keys.add('ControlRight');
 keyMove = game.input.movement();
-ok(keyMove.sprint && !keyMove.sneak, 'Rechtes Strg sprintet ebenfalls');
+ok(keyMove.sprint && !keyMove.sneak, 'Right Ctrl also sprints');
 game.input.keys.clear();
 game.input.keys.add('ShiftLeft');
 keyMove = game.input.movement();
-ok(keyMove.sneak && !keyMove.sprint, 'Shift bleibt die separate Schleichen-/Abstiegstaste');
+ok(keyMove.sneak && !keyMove.sprint, 'Shift remains the separate sneak/descend key');
 game.input.keys.clear();
 
-// Flug-Doppeltipp: kein Startfehler, und Tastatur-Key-Repeat toggelt nicht mehrfach.
+// Flight double tap: no startup error, and keyboard repeat does not toggle repeatedly.
 game.player.gamemode = 'creative';
 game._setFlying(false);
 game.doubleJumpTimer = -Infinity;
 game._onKey({ code: 'Space', repeat: false, preventDefault() {} });
-ok(!game.player.flying, 'Erster Leertastendruck schaltet Kreativflug nicht versehentlich ein');
+ok(!game.player.flying, 'First Space press does not accidentally enable Creative flight');
 const firstFlightTap = game.doubleJumpTimer;
 game._onKey({ code: 'Space', repeat: true, preventDefault() {} });
-ok(!game.player.flying && game.doubleJumpTimer === firstFlightTap, 'Gedrückthalten zählt nicht als zweiter Flug-Tap');
+ok(!game.player.flying && game.doubleJumpTimer === firstFlightTap, 'Holding the key does not count as a second flight tap');
 game._onKey({ code: 'Space', repeat: false, preventDefault() {} });
-ok(game.player.flying, 'Zwei echte Leertasten-Taps aktivieren den Flug');
+ok(game.player.flying, 'Two genuine Space taps enable flight');
 const secondFlightTap = game.doubleJumpTimer;
 game._onKey({ code: 'Space', repeat: true, preventDefault() {} });
-ok(game.player.flying && game.doubleJumpTimer === secondFlightTap, 'Key-Repeat deaktiviert den Flug nicht wieder');
+ok(game.player.flying && game.doubleJumpTimer === secondFlightTap, 'Key repeat does not disable flight again');
 game._setFlying(false);
 
 game.pause();
@@ -426,19 +426,19 @@ console.warn = originalWarn;
 localStorage.setItem = originalSetItem;
 ok(game.state === 'paused'
   && localStorage.getItem('minecraft-klon-save-v1') === goodSavedBytes
-  && elementsById.get('save-feedback')?.textContent.includes('Speichern fehlgeschlagen'),
-'Bei fehlgeschlagenem Speichern bleibt die Welt offen, der Fehler ist sichtbar und der vorherige Spielstand erhalten');
+  && elementsById.get('save-feedback')?.textContent.includes('Saving failed'),
+'After a failed save, the world stays open, the error is visible, and the previous save is preserved');
 game.menus.cb.onQuit();
-ok(game.state === 'menu', 'Speichern & zum Hauptmenü verlässt die Welt nach erfolgreichem Speichern');
+ok(game.state === 'menu', 'Save & Return to Main Menu leaves the world after a successful save');
 const invalidSavedBytes = JSON.stringify({ version: 1, seed: 42 });
 localStorage.setItem('minecraft-klon-save-v1', invalidSavedBytes);
 game.state = 'menu';
 game.continueGame();
 const saveWarning = elementsById.get('save-warning');
 ok(game.state === 'menu' && localStorage.getItem('minecraft-klon-save-v1') === invalidSavedBytes
-  && saveWarning?.hidden === false && saveWarning.textContent.includes('beschädigt'),
-'Beschädigte Speicherstände werden nicht stillschweigend durch eine neue Welt ersetzt');
+  && saveWarning?.hidden === false && saveWarning.textContent.includes('corrupted'),
+'Corrupted saves are not silently replaced by a new world');
 localStorage.setItem('minecraft-klon-save-v1', goodSavedBytes);
 
-console.log(`\n${passed} bestanden, ${failed} fehlgeschlagen`);
+console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

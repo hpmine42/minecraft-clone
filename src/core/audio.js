@@ -1,5 +1,5 @@
-// audio.js — Prozedurale Sounds mit WebAudio (ohne Audiodateien).
-// Muss nach einem Nutzer-Gest (Klick/Touch) initialisiert werden.
+// audio.js — Procedural sounds with WebAudio (no audio files).
+// Must be initialized after a user gesture (click/touch).
 
 export class AudioEngine {
   constructor() {
@@ -12,7 +12,7 @@ export class AudioEngine {
     this._ambientNodes = null;
   }
 
-  /** Muss aus einem User-Event heraus aufgerufen werden (Mobile-Anforderung). */
+  /** Must be called from a user event (mobile requirement). */
   init() {
     if (this.ctx) {
       if (this.ctx.state === 'suspended') this.ctx.resume();
@@ -24,7 +24,7 @@ export class AudioEngine {
     this.master = this.ctx.createGain();
     this.master.gain.value = this.volume;
     this.master.connect(this.ctx.destination);
-    // Rauschpuffer (1 s weißes Rauschen)
+    // Noise buffer (1 second of white noise)
     const len = this.ctx.sampleRate;
     this.noiseBuffer = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
     const data = this.noiseBuffer.getChannelData(0);
@@ -40,7 +40,7 @@ export class AudioEngine {
     return this.ctx ? this.ctx.currentTime : 0;
   }
 
-  /** Kurzer Rausch-Burst mit Filter. */
+  /** Short filtered noise burst. */
   _noiseBurst(duration, filterFreq, gain = 0.3, type = 'lowpass', q = 1) {
     if (!this.ctx || !this.enabled) return;
     const t = this._now();
@@ -59,7 +59,7 @@ export class AudioEngine {
     src.stop(t + duration + 0.05);
   }
 
-  /** Ton mit Hüllkurve. */
+  /** Tone with an envelope. */
   _tone(freq, duration, gain = 0.2, type = 'sine', slideTo = null, delay = 0) {
     if (!this.ctx || !this.enabled) return;
     const t = this._now() + delay;
@@ -76,7 +76,7 @@ export class AudioEngine {
     osc.stop(t + duration + 0.05);
   }
 
-  // ---- Spiel-Sounds -------------------------------------------------------
+  // ---- Game sounds -------------------------------------------------------
   dig(material = 'grass') {
     const presets = {
       grass: [420, 0.12, 0.22],
@@ -209,7 +209,7 @@ export class AudioEngine {
     if (!this._ambientNodes) return;
     const { src, g } = this._ambientNodes;
     g.gain.linearRampToValueAtTime(0.0001, this._now() + 1.5);
-    setTimeout(() => { try { src.stop(); } catch (e) { /* egal */ } }, 1800);
+    setTimeout(() => { try { src.stop(); } catch (e) { /* ignore */ } }, 1800);
     this._ambientNodes = null;
   }
 

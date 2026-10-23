@@ -1,4 +1,4 @@
-// menu-preview.js — Leichtes, instanziertes Voxel-Diorama für den Startbildschirm.
+// menu-preview.js — Lightweight instanced voxel diorama for the start screen.
 import * as THREE from '../../lib/three.module.js';
 import { BLOCK, BLOCKS } from '../world/blocks.js';
 import { tileUV } from '../world/chunk.js';
@@ -13,7 +13,7 @@ const PREVIEW_BLOCK_IDS = [
   BLOCK.IRON_ORE,
 ];
 
-/** Mappt jede Würfelseite auf die passende Atlas-Kachel des Blocks. */
+/** Map each cube face to the block's matching atlas tile. */
 function createBlockGeometry(tiles) {
   const geometry = new THREE.BoxGeometry(1, 1, 1);
   const uv = geometry.getAttribute('uv');
@@ -45,8 +45,8 @@ function terrainHeight(x, z) {
 }
 
 /**
- * Baut ein kleines, kostengünstiges Diorama aus echten Atlas-Texturen.
- * Blöcke desselben Typs werden in einem InstancedMesh zusammengefasst.
+ * Build a small, inexpensive diorama using actual atlas textures.
+ * Blocks of the same type are grouped into an InstancedMesh.
  */
 export function createMenuPreview(scene, atlasTexture) {
   const root = new THREE.Group();
@@ -57,7 +57,7 @@ export function createMenuPreview(scene, atlasTexture) {
     if (placements.has(id)) placements.get(id).push([x, y, z]);
   };
 
-  // Kleine, abgerundete Insel mit grasiger Kuppe und sichtbaren Gesteinsschichten.
+  // Small rounded island with a grassy top and visible rock layers.
   for (let x = -7; x <= 7; x++) {
     for (let z = -7; z <= 7; z++) {
       if (Math.hypot(x, z) > 9.1) continue;
@@ -69,7 +69,7 @@ export function createMenuPreview(scene, atlasTexture) {
     }
   }
 
-  // Drei kleine Blockbäume sorgen für eine klare Silhouette, ohne Pflanzen-Meshes.
+  // Three small block trees create a clear silhouette without plant meshes.
   for (const [x, z, trunkHeight] of [[-4, -2, 4], [3, -3, 5], [2, 4, 4]]) {
     const ground = terrainHeight(x, z);
     for (let y = 1; y <= trunkHeight; y++) addBlock(x, ground + y, z, BLOCK.LOG);
@@ -86,7 +86,7 @@ export function createMenuPreview(scene, atlasTexture) {
     addBlock(x, canopyBase + 3, z, BLOCK.LEAVES);
   }
 
-  // Ein paar freiliegende Erzblöcke setzen gezielte Farbkontraste in den Felsrand.
+  // A few exposed ore blocks add deliberate color contrast to the rocky edge.
   addBlock(-7, -1, 0, BLOCK.COAL_ORE);
   addBlock(-7, -1, 1, BLOCK.IRON_ORE);
 

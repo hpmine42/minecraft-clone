@@ -1,6 +1,6 @@
-// textures.js — Prozeduraler Textur-Atlas (Pixel-Art) per Canvas.
-// Erzeugt alle Block- und Item-Texturen ohne externe Bilder.
-// Atlas: 16x16 Kacheln à 16x16 px = 256x256 px.
+// textures.js — Procedural pixel-art texture atlas generated with Canvas.
+// Creates all block and item textures without external images.
+// Atlas: 16×16 tiles at 16×16 px each = 256×256 px.
 
 import { mulberry32 } from './noise.js';
 
@@ -8,12 +8,12 @@ export const TILE_SIZE = 16;
 export const ATLAS_COLS = 16;
 export const ATLAS_SIZE = TILE_SIZE * ATLAS_COLS;
 
-/** Zeichnet ein Pixel mit optionalem Rauschen pro Kachel. */
+/** Draw a pixel with optional per-tile noise. */
 function makeTilePainter(tileIndex, seed) {
   const rand = mulberry32(seed + tileIndex * 7919);
   const data = new Uint8Array(TILE_SIZE * TILE_SIZE * 4);
   return {
-    /** Grundfarbe + Rauschvariation setzen. */
+    /** Set the base color plus noise variation. */
     fill(r, g, b, variance = 8) {
       for (let i = 0; i < TILE_SIZE * TILE_SIZE; i++) {
         const v = (rand() - 0.5) * 2 * variance;
@@ -24,7 +24,7 @@ function makeTilePainter(tileIndex, seed) {
       }
       return this;
     },
-    /** Kachel vollständig transparent machen (für Pflanzen, Glas, Items). */
+    /** Make the tile fully transparent (for plants, glass, and items). */
     clear() {
       data.fill(0);
       return this;
@@ -41,7 +41,7 @@ function makeTilePainter(tileIndex, seed) {
       }
       return this;
     },
-    /** Pseudo-Zufällige Punkte verstreuen. */
+    /** Scatter pseudo-random dots. */
     speckle(count, r, g, b, alpha = 255) {
       for (let i = 0; i < count; i++) {
         this.set(Math.floor(rand() * TILE_SIZE), Math.floor(rand() * TILE_SIZE), r, g, b, alpha);
@@ -57,7 +57,7 @@ function clamp255(v) {
   return Math.max(0, Math.min(255, Math.round(v)));
 }
 
-/** Kleine, wiederholbare Steinsegmente mit Lichtkante und dunkler Fuge. */
+/** Small repeatable stone segments with a light edge and dark seam. */
 function drawCobblePattern(p, base = [112, 114, 113], mossy = false) {
   p.fill(55, 58, 57, 3);
   const stones = [
@@ -88,8 +88,8 @@ function drawCobblePattern(p, base = [112, 114, 113], mossy = false) {
 }
 
 /**
- * Baut den gesamten Atlas und gibt { canvas, textureData } zurück.
- * Wird sowohl im Browser (Canvas) als auch in Tests (ImageData-Array) genutzt.
+ * Build the complete atlas and return { canvas, textureData }.
+ * Used both in the browser (Canvas) and in tests (ImageData array).
  */
 export function generateAtlasData(seed = 1337) {
   const pixels = new Uint8ClampedArray(ATLAS_SIZE * ATLAS_SIZE * 4);
@@ -114,8 +114,8 @@ export function generateAtlasData(seed = 1337) {
     return p;
   };
 
-  // ---- Natur ---------------------------------------------------------------
-  // 0 Gras-Top: zusammenhängende Grasbüschel statt gleichmäßigem Farbrauschen.
+  // ---- Nature ---------------------------------------------------------------
+  // 0 Grass top: connected grass tufts instead of uniform color noise.
   {
     const p = tile(0);
     p.fill(82, 145, 54, 11);
@@ -130,7 +130,7 @@ export function generateAtlasData(seed = 1337) {
     p.speckle(8, 150, 187, 87);
     drawTile(0, p);
   }
-  // 1 Gras-Seite: unregelmäßige Grasnarbe mit einer dunklen Erd-/Wurzelkante.
+  // 1 Grass side: irregular grass edge with a dark dirt/root boundary.
   {
     const p = tile(1);
     p.fill(126, 82, 54, 8);
@@ -147,7 +147,7 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(1, p);
   }
-  // 2 Stein: kühle, körnige Fläche mit feinen Bruchlinien und Lichtsplittern.
+  // 2 Stone: cool, grainy surface with fine cracks and light flecks.
   {
     const p = tile(2);
     p.fill(117, 123, 126, 6);
@@ -161,7 +161,7 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(2, p);
   }
-  // 3 Erde: dunkle Krümel, warme Lehmflecken und einzelne helle Körner.
+  // 3 Dirt: dark crumbs, warm clay patches, and occasional bright grains.
   {
     const p = tile(3);
     p.fill(126, 83, 55, 7);
@@ -175,13 +175,13 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(3, p);
   }
-  // 4 Bruchstein: lesbare, abgeschrägte Einzelsteine mit dunklen Fugen.
+  // 4 Cobblestone: distinct beveled stones with dark seams.
   {
     const p = tile(4);
     drawCobblePattern(p, [112, 115, 114]);
     drawTile(4, p);
   }
-  // 5 Grundgestein
+  // 5 Bedrock
   {
     const p = tile(5);
     p.fill(70, 70, 70, 18);
@@ -189,7 +189,7 @@ export function generateAtlasData(seed = 1337) {
     p.speckle(14, 105, 105, 105);
     drawTile(5, p);
   }
-  // 6 Sand: feine, warme Körnung mit vereinzelten dunkleren Mineralkörnern.
+  // 6 Sand: fine, warm grain with occasional darker mineral particles.
   {
     const p = tile(6);
     p.fill(221, 204, 151, 6);
@@ -203,7 +203,7 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(6, p);
   }
-  // 7 Kies: abgerundete, unterschiedlich helle Kiesel statt zufälliger Quadrate.
+  // 7 Gravel: rounded pebbles of varying brightness instead of random squares.
   {
     const p = tile(7);
     p.fill(105, 103, 99, 6);
@@ -217,7 +217,7 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(7, p);
   }
-  // 8 Sandstein Top: ruhige Platte mit hellen Sedimentschichten und Fossilpixeln.
+  // 8 Sandstone top: calm slab with bright sediment layers and fossil pixels.
   {
     const p = tile(8);
     p.fill(216, 194, 139, 6);
@@ -229,7 +229,7 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(8, p);
   }
-  // 9 Sandstein Seite: versetzte, klar lesbare Sedimentblöcke.
+  // 9 Sandstone side: staggered, clearly defined sediment blocks.
   {
     const p = tile(9);
     p.fill(218, 196, 141, 5);
@@ -242,27 +242,27 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(9, p);
   }
-  // 10 Sandstein Bottom
+  // 10 Sandstone bottom
   {
     const p = tile(10);
     p.fill(206, 192, 145, 8);
     drawTile(10, p);
   }
-  // 11 Lehm
+  // 11 Clay
   {
     const p = tile(11);
     p.fill(160, 160, 170, 8);
     p.speckle(16, 145, 145, 155);
     drawTile(11, p);
   }
-  // 12 Schnee Top
+  // 12 Snow top
   {
     const p = tile(12);
     p.fill(242, 246, 252, 6);
     p.speckle(10, 228, 234, 244);
     drawTile(12, p);
   }
-  // 13 Schnee Seite
+  // 13 Snow side
   {
     const p = tile(13);
     p.fill(134, 96, 67, 10);
@@ -272,7 +272,7 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(13, p);
   }
-  // 14 Eis
+  // 14 Ice
   {
     const p = tile(14);
     p.fill(160, 196, 236, 8);
@@ -289,7 +289,7 @@ export function generateAtlasData(seed = 1337) {
     p.speckle(10, 15, 10, 28);
     drawTile(15, p);
   }
-  // 16 Wasser (auch als eigenständige Textur animiert)
+  // 16 Water (also animated as a standalone texture)
   {
     const p = tile(16);
     p.fill(52, 108, 202, 10);
@@ -307,7 +307,7 @@ export function generateAtlasData(seed = 1337) {
     p.rect(3, 5, 8, 2, 250, 190, 60);
     drawTile(17, p);
   }
-  // ---- Erze: dunkle Adern, eingefasste Erzadern und kleine Glanzpunkte. ----
+  // ---- Ores: dark veins, outlined deposits, and small highlights. ----
   const oreTile = (index, r, g, b) => {
     const p = tile(index);
     p.fill(111, 117, 119, 7);
@@ -325,14 +325,14 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(index, p);
   };
-  oreTile(18, 28, 28, 30);      // Kohle
-  oreTile(19, 216, 175, 147);   // Eisen
+  oreTile(18, 28, 28, 30);      // Coal
+  oreTile(19, 216, 175, 147);   // Iron
   oreTile(20, 250, 220, 80);    // Gold
-  oreTile(21, 95, 220, 215);    // Diamant
+  oreTile(21, 95, 220, 215);    // Diamond
   oreTile(22, 220, 40, 40);     // Redstone
 
-  // ---- Holz ---------------------------------------------------------------
-  // 23 Stamm-Seite (Eiche)
+  // ---- Wood ---------------------------------------------------------------
+  // 23 Log side (oak)
   {
     const p = tile(23);
     p.fill(104, 82, 50, 8);
@@ -342,7 +342,7 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(23, p);
   }
-  // 24 Stamm-Top (Jahresringe)
+  // 24 Log top (growth rings)
   {
     const p = tile(24);
     p.fill(160, 130, 82, 8);
@@ -355,7 +355,7 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(24, p);
   }
-  // 25 Eichenlaub (undurchsichtig wie Minecraft "schnelle Grafik")
+  // 25 Oak leaves (opaque like Minecraft "fast graphics")
   {
     const p = tile(25);
     p.fill(56, 122, 46, 16);
@@ -363,7 +363,7 @@ export function generateAtlasData(seed = 1337) {
     p.speckle(18, 84, 152, 62);
     drawTile(25, p);
   }
-  // 26 Birkenstamm-Seite
+  // 26 Birch log side
   {
     const p = tile(26);
     p.fill(222, 222, 216, 8);
@@ -373,13 +373,13 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(26, p);
   }
-  // 27 Birkenstamm-Top
+  // 27 Birch log top
   {
     const p = tile(27);
     p.fill(206, 194, 160, 8);
     drawTile(27, p);
   }
-  // 28 Birkenlaub
+  // 28 Birch leaves
   {
     const p = tile(28);
     p.fill(84, 142, 58, 16);
@@ -387,20 +387,20 @@ export function generateAtlasData(seed = 1337) {
     p.speckle(16, 106, 166, 76);
     drawTile(28, p);
   }
-  // 29 Fichtenstamm-Seite
+  // 29 Spruce log side
   {
     const p = tile(29);
     p.fill(74, 52, 32, 8);
     for (let x = 0; x < 16; x += 3) p.rect(x, 0, 1, 16, 58, 40, 24);
     drawTile(29, p);
   }
-  // 30 Fichtenstamm-Top
+  // 30 Spruce log top
   {
     const p = tile(30);
     p.fill(120, 92, 56, 8);
     drawTile(30, p);
   }
-  // 31 Fichtenlaub
+  // 31 Spruce leaves
   {
     const p = tile(31);
     p.fill(40, 88, 50, 16);
@@ -408,7 +408,7 @@ export function generateAtlasData(seed = 1337) {
     p.speckle(14, 60, 114, 64);
     drawTile(31, p);
   }
-  // 32 Bretter: warm geäderte Dielen mit wechselnden Maserungen und Astlöchern.
+  // 32 Planks: warmly grained boards with varied wood patterns and knots.
   {
     const p = tile(32);
     p.fill(176, 136, 78, 6);
@@ -422,7 +422,7 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(32, p);
   }
-  // 33 Setzling
+  // 33 Sapling
   {
     const p = tile(33);
     p.clear();
@@ -433,7 +433,7 @@ export function generateAtlasData(seed = 1337) {
     p.rect(9, 7, 2, 2, 80, 158, 70);
     drawTile(33, p);
   }
-  // 34 Bücherregal-Seite
+  // 34 Bookshelf side
   {
     const p = tile(34);
     p.fill(178, 143, 88, 6);
@@ -447,7 +447,7 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(34, p);
   }
-  // 35 Roter Mohn
+  // 35 Poppy
   {
     const p = tile(35);
     p.clear();
@@ -457,7 +457,7 @@ export function generateAtlasData(seed = 1337) {
     p.rect(6, 2, 4, 1, 220, 60, 52);
     drawTile(35, p);
   }
-  // 36 Gelbe Blume
+  // 36 Yellow flower
   {
     const p = tile(36);
     p.clear();
@@ -466,7 +466,7 @@ export function generateAtlasData(seed = 1337) {
     p.set(7, 5, 200, 160, 40);
     drawTile(36, p);
   }
-  // 37 Hohes Gras
+  // 37 Tall grass
   {
     const p = tile(37);
     p.clear();
@@ -477,7 +477,7 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(37, p);
   }
-  // 38 Roter Pilz
+  // 38 Red mushroom
   {
     const p = tile(38);
     p.clear();
@@ -486,13 +486,13 @@ export function generateAtlasData(seed = 1337) {
     p.set(6, 6, 240, 240, 236); p.set(10, 6, 240, 240, 236);
     drawTile(38, p);
   }
-  // 39 (Platzhalter – alte Weizenstufe)
+  // 39 (placeholder—old wheat stage)
   {
     const p = tile(39);
     p.clear();
     drawTile(39, p);
   }
-  // 40/41 Kaktus
+  // 40/41 Cactus
   {
     const p = tile(40);
     p.fill(58, 128, 52, 10);
@@ -508,7 +508,7 @@ export function generateAtlasData(seed = 1337) {
     q.rect(3, 3, 10, 10, 60, 126, 52);
     drawTile(41, q);
   }
-  // 42 Zuckerrohr
+  // 42 Sugar cane
   {
     const p = tile(42);
     p.clear();
@@ -520,7 +520,7 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(42, p);
   }
-  // 43 Glas
+  // 43 Glass
   {
     const p = tile(43);
     p.clear();
@@ -532,14 +532,14 @@ export function generateAtlasData(seed = 1337) {
     p.rect(3, 4, 1, 3, 255, 255, 255, 180);
     drawTile(43, p);
   }
-  // 44 Wolle
+  // 44 Wool
   {
     const p = tile(44);
     p.fill(232, 232, 232, 8);
     p.speckle(16, 214, 214, 214);
     drawTile(44, p);
   }
-  // 45 Ziegelsteine: warme, versetzte Ziegel mit dunkler Mörtelfuge und Lichtkante.
+  // 45 Bricks: warm, staggered bricks with dark mortar and light edges.
   {
     const p = tile(45);
     p.fill(155, 75, 59, 5);
@@ -554,7 +554,7 @@ export function generateAtlasData(seed = 1337) {
     }
     drawTile(45, p);
   }
-  // 46 Steinziegel: behauene Quader mit feinen hellen Oberkanten.
+  // 46 Stone bricks: hewn blocks with fine bright top edges.
   {
     const p = tile(46);
     p.fill(111, 116, 116, 5);
@@ -566,21 +566,21 @@ export function generateAtlasData(seed = 1337) {
     p.rect(9, 9, 2, 1, 140, 145, 142);
     drawTile(46, p);
   }
-  // 47 Moosiges Bruchstein: dasselbe Mauerwerk, von unregelmäßigen Moosflecken durchsetzt.
+  // 47 Mossy cobblestone: the same masonry interspersed with irregular moss patches.
   {
     const p = tile(47);
     drawCobblePattern(p, [105, 111, 102], true);
     p.speckle(9, 73, 133, 71);
     drawTile(47, p);
   }
-  // 48 Ackerboden Top (feucht)
+  // 48 Farmland top (moist)
   {
     const p = tile(48);
     p.fill(92, 62, 40, 8);
     for (let y = 1; y < 16; y += 3) p.rect(0, y, 16, 1, 70, 46, 28);
     drawTile(48, p);
   }
-  // 49 Ackerboden Seite
+  // 49 Farmland side
   {
     const p = tile(49);
     p.fill(134, 96, 67, 10);
@@ -593,7 +593,7 @@ export function generateAtlasData(seed = 1337) {
     p.rect(0, 2, 16, 2, 100, 70, 46);
     drawTile(49, p);
   }
-  // 50 Leiter
+  // 50 Ladder
   {
     const p = tile(50);
     p.clear();
@@ -602,7 +602,7 @@ export function generateAtlasData(seed = 1337) {
     for (let y = 2; y < 16; y += 4) p.rect(2, y, 12, 1, 170, 138, 84);
     drawTile(50, p);
   }
-  // 51 Fackel
+  // 51 Torch
   {
     const p = tile(51);
     p.clear();
@@ -612,7 +612,7 @@ export function generateAtlasData(seed = 1337) {
     p.set(7, 4, 255, 120, 30); p.set(8, 5, 255, 120, 30);
     drawTile(51, p);
   }
-  // 52 Werkbank-Seite
+  // 52 Crafting table side
   {
     const p = tile(52);
     p.fill(178, 143, 88, 8);
@@ -622,14 +622,14 @@ export function generateAtlasData(seed = 1337) {
     p.rect(1, 5, 14, 1, 120, 90, 54);
     drawTile(52, p);
   }
-  // 53 Ofen Top/Seite
+  // 53 Furnace top/side
   {
     const p = tile(53);
     p.fill(110, 110, 110, 10);
     p.speckle(18, 95, 95, 95);
     drawTile(53, p);
   }
-  // 54 Ofen Front
+  // 54 Furnace front
   {
     const p = tile(54);
     p.fill(110, 110, 110, 10);
@@ -638,7 +638,7 @@ export function generateAtlasData(seed = 1337) {
     p.set(6, 10, 250, 180, 70); p.set(8, 11, 250, 180, 70);
     drawTile(54, p);
   }
-  // 55/56 Truhe
+  // 55/56 Chest
   {
     const p = tile(55);
     p.fill(160, 116, 62, 8);
@@ -657,35 +657,35 @@ export function generateAtlasData(seed = 1337) {
     fn(p);
     drawTile(index, p);
   };
-  itemIcon(57, (p) => { // Stock
+  itemIcon(57, (p) => { // Stick
     for (let i = 0; i < 9; i++) {
       p.set(4 + i, 11 - i, 150, 112, 62);
       p.set(5 + i, 11 - i, 120, 88, 48);
     }
   });
-  itemIcon(58, (p) => { // Kohle
+  itemIcon(58, (p) => { // Coal
     p.rect(5, 5, 6, 6, 30, 30, 32);
     p.rect(6, 4, 4, 1, 30, 30, 32);
     p.set(7, 6, 70, 70, 74); p.set(9, 8, 70, 70, 74);
     p.rect(4, 7, 1, 2, 30, 30, 32); p.rect(11, 6, 1, 3, 30, 30, 32);
   });
-  itemIcon(101, (p) => { // Holzkohle
+  itemIcon(101, (p) => { // Charcoal
     p.rect(5, 4, 6, 8, 48, 34, 25);
     p.rect(6, 5, 4, 6, 88, 56, 34);
     p.set(7, 6, 150, 90, 48); p.set(9, 9, 128, 72, 38);
     p.set(5, 7, 38, 30, 26); p.set(11, 8, 38, 30, 26);
   });
-  itemIcon(59, (p) => { // Eisenbarren
+  itemIcon(59, (p) => { // Iron ingot
     p.rect(3, 8, 10, 4, 216, 216, 220);
     p.rect(4, 6, 8, 2, 235, 235, 238);
     p.rect(5, 7, 3, 1, 255, 255, 255);
   });
-  itemIcon(60, (p) => { // Goldbarren
+  itemIcon(60, (p) => { // Gold ingot
     p.rect(3, 8, 10, 4, 240, 200, 60);
     p.rect(4, 6, 8, 2, 250, 220, 90);
     p.rect(5, 7, 3, 1, 255, 245, 160);
   });
-  itemIcon(61, (p) => { // Diamant
+  itemIcon(61, (p) => { // Diamond
     p.rect(5, 4, 6, 2, 100, 230, 225);
     p.rect(4, 6, 8, 3, 80, 210, 210);
     p.rect(5, 9, 6, 2, 60, 180, 190);
@@ -698,25 +698,25 @@ export function generateAtlasData(seed = 1337) {
     p.rect(8, 9, 3, 2, 230, 50, 50);
     p.set(7, 6, 255, 120, 120);
   });
-  itemIcon(63, (p) => { // Samen
+  itemIcon(63, (p) => { // Seeds
     p.set(5, 6, 90, 150, 60); p.set(6, 7, 90, 150, 60);
     p.set(9, 5, 110, 170, 70); p.set(10, 6, 110, 170, 70);
     p.set(6, 10, 80, 130, 50); p.set(9, 10, 80, 130, 50);
   });
-  itemIcon(64, (p) => { // Weizen-Item
+  itemIcon(64, (p) => { // Wheat item
     for (let i = 0; i < 8; i++) {
       p.set(7, 13 - i, 200, 180, 80);
       p.set(6, 12 - i, 220, 200, 100);
       p.set(8, 12 - i, 220, 200, 100);
     }
   });
-  itemIcon(65, (p) => { // Leder
+  itemIcon(65, (p) => { // Leather
     p.rect(4, 5, 8, 6, 180, 110, 60);
     p.rect(5, 4, 6, 1, 180, 110, 60);
     p.rect(5, 11, 6, 1, 150, 90, 50);
     p.set(6, 7, 150, 90, 50); p.set(9, 8, 150, 90, 50);
   });
-  itemIcon(66, (p) => { // Feder
+  itemIcon(66, (p) => { // Feather
     for (let i = 0; i < 10; i++) {
       p.set(5 + i, 12 - i, 240, 240, 245);
       p.set(6 + i, 12 - i, 220, 220, 228);
@@ -724,23 +724,23 @@ export function generateAtlasData(seed = 1337) {
     }
     p.set(4, 13, 120, 120, 130);
   });
-  itemIcon(67, (p) => { // Knochen
+  itemIcon(67, (p) => { // Bone
     p.rect(4, 7, 8, 2, 235, 232, 220);
     p.rect(3, 6, 2, 2, 235, 232, 220); p.rect(3, 9, 2, 2, 235, 232, 220);
     p.rect(11, 6, 2, 2, 235, 232, 220); p.rect(11, 9, 2, 2, 235, 232, 220);
   });
-  itemIcon(68, (p) => { // Knochenmehl
+  itemIcon(68, (p) => { // Bone meal
     p.rect(5, 5, 6, 8, 235, 235, 230);
     p.rect(6, 4, 4, 1, 235, 235, 230);
     p.speckle(10, 200, 200, 195);
   });
-  itemIcon(69, (p) => { // Apfel
+  itemIcon(69, (p) => { // Apple
     p.rect(5, 6, 6, 6, 210, 40, 40);
     p.rect(4, 7, 1, 4, 210, 40, 40); p.rect(11, 7, 1, 4, 210, 40, 40);
     p.rect(7, 4, 1, 2, 100, 70, 40);
     p.set(6, 7, 240, 90, 90); p.set(7, 7, 240, 90, 90);
   });
-  itemIcon(70, (p) => { // Brot
+  itemIcon(70, (p) => { // Bread
     p.rect(3, 6, 10, 5, 190, 130, 70);
     p.rect(4, 5, 8, 1, 210, 150, 85);
     p.rect(5, 7, 2, 1, 150, 100, 55); p.rect(9, 8, 2, 1, 150, 100, 55);
@@ -759,14 +759,14 @@ export function generateAtlasData(seed = 1337) {
       }
     });
   };
-  meatIcon(71, 235, 140, 145, false);  // Rohes Schwein
-  meatIcon(72, 200, 130, 95, true);    // Gebratenes Schwein
-  meatIcon(73, 220, 90, 85, false);    // Rohes Rind
+  meatIcon(71, 235, 140, 145, false);  // Raw pork
+  meatIcon(72, 200, 130, 95, true);    // Cooked pork
+  meatIcon(73, 220, 90, 85, false);    // Raw beef
   meatIcon(74, 160, 85, 60, true);     // Steak
-  meatIcon(75, 235, 175, 150, false);  // Rohes Huhn
-  meatIcon(76, 200, 150, 110, true);   // Gebratenes Huhn
+  meatIcon(75, 235, 175, 150, false);  // Raw chicken
+  meatIcon(76, 200, 150, 110, true);   // Cooked chicken
 
-  // Werkzeug-Icons
+  // Tool icons
   const toolIcon = (index, headR, headG, headB, stickDark) => {
     itemIcon(index, (p) => {
       for (let i = 0; i < 8; i++) {
@@ -827,7 +827,7 @@ export function generateAtlasData(seed = 1337) {
   shovelIcon(87, ...matColors.iron, true); shovelIcon(88, ...matColors.diamond, true);
   swordIcon(89, ...matColors.wood, false); swordIcon(90, ...matColors.stone, true);
   swordIcon(91, ...matColors.iron, true); swordIcon(92, ...matColors.diamond, true);
-  // Hacken (97-100)
+  // Hoes (97–100)
   const hoeIcon = (index, r, g, b, dk) => {
     itemIcon(index, (p) => {
       for (let i = 0; i < 9; i++) {
@@ -841,7 +841,7 @@ export function generateAtlasData(seed = 1337) {
   hoeIcon(97, ...matColors.wood, false); hoeIcon(98, ...matColors.stone, true);
   hoeIcon(99, ...matColors.iron, true); hoeIcon(100, ...matColors.diamond, true);
 
-  // 93-96 Weizen-Wachstumsstufen
+  // 93–96 Wheat growth stages
   {
     const stages = [
       { h: 4, c: [120, 170, 70] },
@@ -866,7 +866,7 @@ export function generateAtlasData(seed = 1337) {
   return { pixels, size: ATLAS_SIZE };
 }
 
-/** Erzeugt das Atlas-Canvas (nur Browser). */
+/** Create the atlas canvas (browser only). */
 export function createAtlasCanvas(seed = 1337) {
   const { pixels, size } = generateAtlasData(seed);
   const canvas = document.createElement('canvas');
@@ -879,7 +879,7 @@ export function createAtlasCanvas(seed = 1337) {
   return canvas;
 }
 
-/** Zeichnet ein Item-/Block-Icon in ein Ziel-Canvas (für HUD/Inventar). */
+/** Draw an item/block icon into a target canvas (for HUD/inventory). */
 export function drawTileIcon(targetCanvas, tileIndex, atlasCanvas) {
   const ctx = targetCanvas.getContext('2d');
   ctx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
@@ -889,7 +889,7 @@ export function drawTileIcon(targetCanvas, tileIndex, atlasCanvas) {
   ctx.drawImage(atlasCanvas, sx, sy, TILE_SIZE, TILE_SIZE, 0, 0, targetCanvas.width, targetCanvas.height);
 }
 
-/** Eigenständige Wasser-Textur (animierbarer 4-Frame-Streifen). */
+/** Standalone water texture (animatable four-frame strip). */
 export function createWaterTexture() {
   const frames = 4;
   const canvas = document.createElement('canvas');
@@ -900,7 +900,7 @@ export function createWaterTexture() {
     const p = makeTilePainter(200 + f, 4242);
     p.fill(37, 99, 184, 6);
     p.speckle(9, 31, 83, 160);
-    // Gebrochene, horizontale Lichtwellen verschieben sich von Frame zu Frame.
+    // Broken horizontal light waves shift from frame to frame.
     for (let x = 0; x < TILE_SIZE; x += 2) {
       const waveY = (Math.floor(5 + Math.sin((x + f * 3) * 0.52) * 3) + TILE_SIZE) % TILE_SIZE;
       p.rect(x, waveY, 2, 1, 111, 177, 234);
@@ -928,7 +928,7 @@ export function createLavaTexture() {
     const p = makeTilePainter(210 + f, 999);
     p.fill(170, 58, 15, 9);
     p.speckle(20, 115, 34, 9);
-    // Helle Magmaströme wandern leicht, ohne dass die ganze Fläche flackert.
+    // Bright magma currents drift subtly without making the whole surface flicker.
     for (let x = 0; x < TILE_SIZE; x += 4) {
       const y = (Math.floor(4 + Math.sin((x - f * 2) * 0.56) * 3) + TILE_SIZE) % TILE_SIZE;
       p.rect(x, y, 3, 2, 237, 108, 23);

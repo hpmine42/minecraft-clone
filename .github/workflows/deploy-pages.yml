@@ -1,6 +1,6 @@
-# Deployt den Minecraft-Klon als statische Seite nach GitHub Pages.
-# - Bei Pull Requests: nur die Tests
-# - Bei Push auf main / manuellem Start: Tests + Deployment
+# Deploys Minecraft Clone as a static site to GitHub Pages.
+# - Pull requests: tests only
+# - Pushes to main / manual runs: tests + deployment
 name: GitHub Pages
 
 on:
@@ -15,15 +15,15 @@ permissions:
   pages: write
   id-token: write
 
-# Nicht zwei Deployments gleichzeitig
+# Prevent concurrent deployments
 concurrency:
   group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   # ------------------------------------------------------------------
-# 1) Automatisierte Tests (294 Prüfungen: Welt, Spiel, Module, Boot,
-#    Handy-Boot, Touch, DOM) – ohne Browser lauffähig
+# 1) Automated tests (world, game, modules, boot, mobile boot,
+#    touch, and DOM) that run without a browser
   # ------------------------------------------------------------------
   test:
     runs-on: ubuntu-latest
@@ -31,20 +31,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Node.js einrichten
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      - name: Abhängigkeiten installieren
+      - name: Install dependencies
         run: npm ci
 
-      - name: Tests ausführen
+      - name: Run tests
         run: npm test
 
   # ------------------------------------------------------------------
-  # 2) Statische Dateien nach GitHub Pages deployen (nur main)
+  # 2) Deploy static files to GitHub Pages (main only)
   # ------------------------------------------------------------------
   deploy:
     needs: test
@@ -57,24 +57,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Seiten-Dateien zusammenstellen
+      - name: Assemble site files
         run: |
           mkdir -p _site
           cp index.html styles.css README.md _site/
           cp -r lib src _site/
-          # Jekyll deaktivieren (verarbeitet sonst Dateien)
+          # Disable Jekyll (which would otherwise process files)
           touch _site/.nojekyll
 
-      - name: GitHub Pages konfigurieren
+      - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
 
-      - name: Artifact hochladen
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
 
-      - name: Nach GitHub Pages deployen
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

@@ -1,4 +1,4 @@
-// player.js — Spielerphysik, Kollision, Gesundheit, Hunger, Schwimmen, Fliegen.
+// player.js — Player physics, collision, health, hunger, swimming, and flying.
 import { BLOCK, BLOCKS } from '../world/blocks.js';
 
 export const PLAYER_WIDTH = 0.6;
@@ -29,8 +29,8 @@ export class Player {
     this.world = world;
     this.position = { x: 0.5, y: 50, z: 0.5 };
     this.velocity = { x: 0, y: 0, z: 0 };
-    this.yaw = 0;       // Blickrichtung horizontal (rad)
-    this.pitch = 0;     // Blickrichtung vertikal (rad)
+    this.yaw = 0;       // Horizontal look direction (radians)
+    this.pitch = 0;     // Vertical look direction (radians)
     this.onGround = false;
     this.flying = false;
     this.sneaking = false;
@@ -49,15 +49,15 @@ export class Player {
     this.gamemode = 'survival'; // 'survival' | 'creative'
     this.peaceful = true;
     this.invulnerableTime = 0;
-    this.breath = 10;           // Atemblasen (0-10)
+    this.breath = 10;           // Air bubbles (0–10)
     this.breathMax = 10;
     this.attackCooldown = 0;
-    this.walkTime = 0;          // für Schritt-Sounds/Bobbing
+    this.walkTime = 0;          // for footstep sounds/bobbing
     this.hurtTime = 0;
     this.lastDamage = 0;
   }
 
-  /** Blickrichtung als normalisierter Vektor. */
+  /** Look direction as a normalized vector. */
   lookDir() {
     const cp = Math.cos(this.pitch);
     return {
@@ -67,13 +67,13 @@ export class Player {
     };
   }
 
-  /** Augenposition. */
+  /** Eye position. */
   eyePosition() {
     const eye = this.sneaking ? EYE_HEIGHT_SNEAK : EYE_HEIGHT;
     return { x: this.position.x, y: this.position.y + eye, z: this.position.z };
   }
 
-  /** AABB des Spielers. */
+  /** Player AABB. */
   aabb() {
     const w = PLAYER_WIDTH / 2;
     return {
@@ -83,14 +83,14 @@ export class Player {
     };
   }
 
-  /** Blockt Kollision? */
+  /** Does the block collide? */
   isSolidAt(x, y, z) {
     const id = this.world.getBlock(Math.floor(x), Math.floor(y), Math.floor(z));
     const def = BLOCKS[id];
     return def ? def.solid : false;
   }
 
-  /** Prüft, ob die AABB mit soliden Blöcken kollidiert. */
+  /** Check whether the AABB collides with solid blocks. */
   collides(px, py, pz) {
     const w = PLAYER_WIDTH / 2;
     const minX = Math.floor(px - w);
@@ -112,14 +112,14 @@ export class Player {
   }
 
   /**
-   * Bewegung + Physik für einen Zeitschritt.
-   * @param {number} dt Sekunden
+   * Movement + physics for one time step.
+   * @param {number} dt seconds
    * @param {{forward:number, right:number, jump:boolean, sneak:boolean, sprint:boolean}} input
-   *   forward/right in [-1,1] (Kamera-relativ)
+   *   forward/right in [-1,1] (camera-relative)
    */
   update(dt, input) {
     if (this.dead) return;
-    dt = Math.min(dt, 0.05); // Stabilität
+    dt = Math.min(dt, 0.05); // Stability
     this.invulnerableTime = Math.max(0, this.invulnerableTime - dt);
     this.hurtTime = Math.max(0, this.hurtTime - dt);
     this.attackCooldown = Math.max(0, this.attackCooldown - dt);
@@ -127,7 +127,7 @@ export class Player {
     const pos = this.position;
     const vel = this.velocity;
 
-    // Umgebung prüfen
+    // Check surroundings
     const feetId = this.world.getBlock(Math.floor(pos.x), Math.floor(pos.y + 0.2), Math.floor(pos.z));
     const midId = this.world.getBlock(Math.floor(pos.x), Math.floor(pos.y + 0.9), Math.floor(pos.z));
     const headId = this.world.getBlock(Math.floor(pos.x), Math.floor(pos.y + EYE_HEIGHT), Math.floor(pos.z));
@@ -140,7 +140,7 @@ export class Player {
     this.sneaking = input.sneak && !this.flying && this.gamemode !== 'creative';
     this.sprinting = input.sprint && input.forward > 0.5 && this.hunger > 6 && !this.sneaking;
 
-    // Zielgeschwindigkeit (Kamera-relativ)
+    // Target velocity (camera-relative)
     const sin = Math.sin(this.yaw);
     const cos = Math.cos(this.yaw);
     const fwd = input.forward || 0;
@@ -163,23 +163,23 @@ export class Player {
       speed = PHYS.walkSpeed;
     }
 
-    // Horizontale Beschleunigung
+    // Horizontal acceleration
     const accel = this.onGround || this.flying ? 1 : PHYS.airControl;
     const control = Math.min(1, accel * dt * 14);
     vel.x += (moveX * speed - vel.x) * control;
     vel.z += (moveZ * speed - vel.z) * control;
 
-    // Reibung ohne Input
+    // Friction without input
     if (Math.abs(fwd) < 0.01 && Math.abs(right) < 0.01 && this.onGround && !this.flying) {
       const fr = Math.max(0, 1 - PHYS.groundFriction * dt);
       vel.x *= fr;
       vel.z *= fr;
     }
 
-    // Vertikal
+    // Vertical movement
     if (this.flying) {
-      // Aufsteigen hat Vorrang vor Absteigen. Auf Touch-Geräten bleibt Sneak ein
-      // Toggle; ohne diese Priorität würden Jump und Sneak die Flugsteuerung sperren.
+      // Ascending takes priority over descending. Sneak remains a toggle on touch
+      // devices; without this priority, Jump and Sneak would block flight controls.
       const vy = input.jump ? speed : input.sneak ? -speed : 0;
       vel.y += (vy - vel.y) * Math.min(1, dt * 12);
     } else if (this.onLadder) {
@@ -206,13 +206,13 @@ export class Player {
       }
     }
 
-    // Kollision: Achsenweise bewegen
+    // Collision: move one axis at a time
     const oldY = pos.y;
     this.moveAxis('x', vel.x * dt);
     this.moveAxis('z', vel.z * dt);
     const landed = this.moveAxis('y', vel.y * dt);
 
-    // Fallen zählen
+    // Track falling
     if (vel.y < 0 && !this.onGround && !this.inWater && !this.onLadder) {
       this.fallDistance += (oldY - pos.y);
     }
@@ -220,14 +220,14 @@ export class Player {
       this.onLanding();
     }
 
-    // Geh-Bobbing / Ausdauer
+    // Walk bobbing / exhaustion
     const hSpeed = Math.hypot(vel.x, vel.z);
     if (this.onGround && hSpeed > 0.5) {
       this.walkTime += dt * hSpeed;
       this.exhaustion += dt * (this.sprinting ? 0.02 : 0.005) * hSpeed;
     }
 
-    // Hunger & Gesundheit
+    // Hunger & health
     this.exhaustion = Math.max(0, this.exhaustion - dt * 0.4);
     if (this.exhaustion > 4) {
       this.exhaustion = 0;
@@ -237,7 +237,7 @@ export class Player {
     }
     if (this.gamemode === 'survival') {
       if (this.hunger <= 0 && this.health > 0) {
-        // Verhungern
+        // Starvation
         this._starveTimer = (this._starveTimer || 0) + dt;
         if (this._starveTimer > 4) {
           this._starveTimer = 0;
@@ -253,7 +253,7 @@ export class Player {
       }
     }
 
-    // Ertrinken / Atem
+    // Drowning / air
     if (this.headInWater && this.gamemode === 'survival') {
       this.breath -= dt;
       if (this.breath <= 0) {
@@ -269,7 +269,7 @@ export class Player {
       this._drownTimer = 0;
     }
 
-    // Lava-Schaden
+    // Lava damage
     if (this.inLava && this.gamemode === 'survival') {
       this._lavaTimer = (this._lavaTimer || 0) + dt;
       if (this._lavaTimer > 0.7) {
@@ -278,13 +278,13 @@ export class Player {
       }
     }
 
-    // Weltgrenzen (weich nach unten)
+    // World bounds (soft lower limit)
     if (pos.y < -20) {
       this.takeDamage(100, 'void');
     }
   }
 
-  /** Bewegt eine Achse mit Kollisionsauflösung. Gibt true bei Bodenkontakt nach Y-Bewegung. */
+  /** Move one axis with collision resolution. Returns true for ground contact after Y movement. */
   moveAxis(axis, delta) {
     if (delta === 0) return false;
     const pos = this.position;
@@ -314,7 +314,7 @@ export class Player {
     if (axis === 'y') {
       this.onGround = delta < 0 ? this.onGround : false;
       if (delta < 0) {
-        // Prüfe Bodenkontakt: 0.05 unter dem Spieler
+        // Check ground contact 0.05 below the player
         const w = PLAYER_WIDTH / 2;
         this.onGround = this.collides(pos.x, pos.y - 0.06, pos.z);
         if (this.onGround) landed = true;
@@ -336,7 +336,7 @@ export class Player {
     this.justLanded = fall;
   }
 
-  /** Schaden zufügen. */
+  /** Apply damage. */
   takeDamage(amount, source = 'generic') {
     if (this.gamemode === 'creative' && source !== 'void') return false;
     if (this.invulnerableTime > 0 && source !== 'hunger' && source !== 'drown') return false;
@@ -352,14 +352,14 @@ export class Player {
     return true;
   }
 
-  /** Essen. Gibt true wenn etwas gegessen wurde. */
+  /** Eat. Returns true if something was consumed. */
   eat(foodPoints) {
     if (this.hunger >= this.maxHunger && this.health >= this.maxHealth) return false;
     this.hunger = Math.min(this.maxHunger, this.hunger + foodPoints);
     return true;
   }
 
-  /** Spieler wiederbeleben. */
+  /** Respawn the player. */
   respawn(spawnPos) {
     this.health = this.maxHealth;
     this.hunger = this.maxHunger;
@@ -378,7 +378,7 @@ export class Player {
     this.invulnerableTime = 1.5;
   }
 
-  /** Setzt den Spieler auf eine Position (Initialisierung). */
+  /** Teleport the player to a position (initialization). */
   teleport(x, y, z) {
     this.position = { x, y, z };
     this.velocity = { x: 0, y: 0, z: 0 };

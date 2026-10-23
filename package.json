@@ -1,7 +1,7 @@
 {
-  "name": "minecraft-klon",
+  "name": "minecraft-clone",
   "version": "1.0.0",
-  "description": "Minecraft-Klon für Desktop und Handy – Browser-Voxel-Spiel mit Terrain, Mobs, Crafting, Tag/Nacht und mehr",
+  "description": "Minecraft clone for desktop and mobile—a browser-based voxel game with terrain, mobs, crafting, a day/night cycle, and more",
   "main": "index.js",
   "scripts": {
     "test": "node tests/world.test.mjs && node tests/game.test.mjs && node tests/inventory-desktop.test.mjs && node tests/furnace.test.mjs && node tests/containers.test.mjs && node tests/block-cracks.test.mjs && node tests/hud.test.mjs && node tests/particles.test.mjs && node tests/storage.test.mjs && node tests/modules.test.mjs && node tests/boot.test.mjs && node tests/mobile-boot.test.mjs && node tests/touch.test.mjs && node tests/dom-ids.test.mjs",

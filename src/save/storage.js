@@ -1,6 +1,7 @@
-// storage.js — Spielstände in localStorage speichern/laden und sichern.
+// storage.js — Save, load, and back up games in localStorage.
 import { BLOCKS } from '../world/blocks.js';
 
+// Keep the legacy key names so existing browser saves remain compatible.
 const SAVE_KEY = 'minecraft-klon-save-v1';
 const SETTINGS_KEY = 'minecraft-klon-settings-v1';
 export const MAX_SAVE_SIZE = 8 * 1024 * 1024;
@@ -213,7 +214,7 @@ export function saveGame(world, player, inventory, extra = {}) {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     return true;
   } catch (e) {
-    console.warn('Speichern fehlgeschlagen:', e);
+    console.warn('Saving failed:', e);
     return false;
   }
 }
@@ -226,12 +227,12 @@ export function loadGame() {
     if (!validSave(data)) return null;
     return data;
   } catch (e) {
-    console.warn('Laden fehlgeschlagen:', e);
+    console.warn('Loading failed:', e);
     return null;
   }
 }
 
-/** Liest auch einen beschädigten Spielstand unverändert aus, damit er gesichert werden kann. */
+/** Read even a corrupted save unchanged so it can be backed up. */
 export function exportSaveData() {
   try {
     return localStorage.getItem(SAVE_KEY);
@@ -240,7 +241,7 @@ export function exportSaveData() {
   }
 }
 
-/** Importiert nur vollständige, begrenzte Spielstände. Ein Fehler lässt den alten Spielstand stehen. */
+/** Import only complete, size-limited saves. Errors leave the old save intact. */
 export function importSaveData(raw) {
   if (typeof raw !== 'string' || raw.length === 0 || raw.length > MAX_SAVE_SIZE) return false;
   try {
@@ -248,7 +249,7 @@ export function importSaveData(raw) {
     localStorage.setItem(SAVE_KEY, raw);
     return true;
   } catch (e) {
-    console.warn('Import fehlgeschlagen:', e);
+    console.warn('Import failed:', e);
     return false;
   }
 }
@@ -289,14 +290,14 @@ export function loadSettings() {
   }
 }
 
-/** Standard-Einstellungen (gerätabhängig). */
+/** Default settings (device-dependent). */
 export function defaultSettings(isMobile) {
   return {
     renderDistance: isMobile ? 3 : 6,
     fov: isMobile ? 70 : 75,
     sensitivity: isMobile ? 0.0042 : 0.0022,
     volume: 0.7,
-    dayLength: 480,           // Sekunden pro Tag
+    dayLength: 480,           // Seconds per day
     showDebug: false,
     invertY: false,
     reduceMotion: false,

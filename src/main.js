@@ -1,4 +1,4 @@
-// main.js — Spielverkabelung: Zustände, Hauptschleife, Steuerung, Speichern.
+// main.js — Game wiring: state, main loop, controls, and saving.
 import * as THREE from '../lib/three.module.js';
 import { Engine } from './core/engine.js';
 import { Input } from './core/input.js';
@@ -78,7 +78,7 @@ class Game {
     this.input.sensitivity = this.settings.sensitivity;
     this.input.shouldCaptureWheel = () => this.state === 'playing';
     this.input.onPause = () => {
-      // Pointer-Lock verloren → Pause öffnen (nur wenn gerade gespielt wird)
+      // Pointer lock lost → open Pause (only while actively playing)
       if (this.state === 'playing' && !this.isTouch) this.pause();
     };
 
@@ -183,7 +183,7 @@ class Game {
       onRespawn: () => this.respawn(),
       onSettingsChange: (key, value) => this.applySetting(key, value),
       onResetWorld: () => { deleteSave(); this.startNewWorld(); },
-      onDeleteSave: () => { deleteSave(); this.menus.setHasSave(false); this.toast('Spielstand gelöscht'); },
+      onDeleteSave: () => { deleteSave(); this.menus.setHasSave(false); this.toast('Save deleted'); },
       onCloseInventory: () => this.closeInventory(),
       onContainerChange: () => this.saveNow(),
       onCraft: () => this.audio.craft(),
@@ -200,7 +200,7 @@ class Game {
 
     this.debug = new DebugOverlay($('debug'));
 
-    // Globale Events
+    // Global events
     window.addEventListener('keydown', (e) => this._onKey(e));
     window.addEventListener('keyup', (e) => this._onKeyUp(e));
     this.canvas.addEventListener('click', () => {
@@ -209,26 +209,26 @@ class Game {
         this.input.lock();
       }
     });
-    // Audio bei erster Interaktion initialisieren
+    // Initialize audio on the first interaction
     const initAudio = () => { this.audio.init(); };
     window.addEventListener('pointerdown', initAudio, { once: true });
     window.addEventListener('touchstart', initAudio, { once: true });
     window.addEventListener('keydown', initAudio, { once: true });
 
-    // Sichtbarkeitswechsel → Auto-Speichern / Pause
+    // Visibility change → autosave / pause
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && (this.state === 'playing' || this.state === 'inventory')) {
         this.saveNow();
       }
     });
 
-    // Mobile-UI ein-/ausblenden
+    // Show/hide the mobile UI
     $('mobile-controls').style.display = this.isTouch ? 'block' : 'none';
 
     this.menus.showScreen('main-menu');
     this.state = 'menu';
 
-    // Hauptschleife starten
+    // Start the main loop
     requestAnimationFrame((t) => this._loop(t));
   }
 
@@ -271,14 +271,14 @@ class Game {
       solid, transparent, fluidWater, fluidLava,
       scene: this.engine.scene,
     };
-    // Nacht-Dunkelung (Lava leuchtet von selbst → bleibt ungetönt)
+    // Night darkening (lava emits light and remains untinted)
     this.engine.registerTintable(solid);
     this.engine.registerTintable(transparent);
     this.engine.registerTintable(fluidWater);
   }
 
   // =========================================================================
-  // Weltverwaltung
+  // World management
   // =========================================================================
   startNewWorld() {
     const saveWarning = $('save-warning');
@@ -298,17 +298,17 @@ class Game {
     let seed = 0;
     if (/^\d+$/.test(seedStr)) seed = parseInt(seedStr, 10) >>> 0;
     else {
-      // String-Seed hashen
+      // Hash a string seed
       for (let i = 0; i < seedStr.length; i++) {
         seed = (Math.imul(seed, 31) + seedStr.charCodeAt(i)) >>> 0;
       }
     }
 
     this.menuPreview?.setVisible(false);
-    this.menus.setLoading('Welt wird generiert…');
+    this.menus.setLoading('Generating World…');
     this.state = 'loading';
 
-    // Kurze Pause, damit das Loading-Overlay erscheint
+    // Brief pause so the loading overlay can appear
     setTimeout(() => {
       this._initWorld(seed, worldType);
       const spawn = this.world.gen.findSpawn();
@@ -326,7 +326,7 @@ class Game {
       this.weather = 'clear';
       this.weatherTimer = 90 + Math.random() * 180;
 
-      // Start-Ausrüstung
+      // Starting equipment
       this.inventory.fromJSON({ selected: 0, slots: [], equipment: {} });
       this.menus.resetInventoryState();
       if (gamemode === 'creative') {
@@ -343,7 +343,7 @@ class Game {
         this.inventory.slots[1] = { id: BLOCK.BREAD, count: 3, dur: null };
       }
 
-      // Chunks vorladen (Spawn-Umgebung)
+      // Preload chunks around the spawn area
       for (let i = 0; i < 3; i++) {
         this.world.update(this.player.position.x, this.player.position.z, Math.min(2, this.settings.renderDistance), 40, Infinity);
       }
@@ -355,7 +355,7 @@ class Game {
       this.worldStatusTimer = 0;
       this.menus.hideAll();
       if (!this.isTouch) this.input.lock();
-      this.toast('Willkommen! Viel Spaß beim Bauen.');
+      this.toast('Welcome! Have fun building.');
     }, 60);
   }
 
@@ -365,7 +365,7 @@ class Game {
       if (hasSave()) {
         const warning = $('save-warning');
         if (warning) {
-          warning.textContent = 'Der Spielstand ist beschädigt oder nicht kompatibel. Er wurde nicht verändert. Sichere ihn, bevor du eine neue Welt startest.';
+          warning.textContent = 'The save is corrupted or incompatible. It has not been changed. Back it up before starting a new world.';
           warning.hidden = false;
         }
         this.menus.showScreen('main-menu');
@@ -377,7 +377,7 @@ class Game {
     const warning = $('save-warning');
     if (warning) warning.hidden = true;
     this.menuPreview?.setVisible(false);
-    this.menus.setLoading('Spielstand wird geladen…');
+    this.menus.setLoading('Loading Saved Game…');
     this.state = 'loading';
     setTimeout(() => {
       this._initWorld(data.seed, data.worldType || 'normal', data);
@@ -391,9 +391,9 @@ class Game {
       if (data.stats) this.stats = { ...this.stats, ...data.stats };
 
       if (!this.world.gen.heightAt) {
-        // Sicherheit
+        // Safety check
       }
-      // Falls keine Position: Spawn suchen
+      // If no position is available, find a spawn
       if (!data.player || !data.player.position) {
         const spawn = this.world.gen.findSpawn();
         this.player.teleport(spawn.x, spawn.y, spawn.z);
@@ -409,12 +409,12 @@ class Game {
       this.worldStatusTimer = 0;
       this.menus.hideAll();
       if (!this.isTouch) this.input.lock();
-      this.toast('Spielstand geladen.');
+      this.toast('Saved game loaded.');
     }, 60);
   }
 
   _initWorld(seed, worldType, savedData = null) {
-    // Alte Welt aufräumen
+    // Clean up the old world
     if (this.world) {
       for (const chunk of this.world.chunks.values()) {
         this.world.disposeChunkMeshes(chunk);
@@ -424,7 +424,7 @@ class Game {
     if (this.particles) this.particles.clear();
 
     this.world = new World(seed, worldType, this.materials);
-    // Nur beim Fortsetzen werden Weltänderungen und Containerzustände restauriert.
+    // Restore world changes and container states only when continuing a game.
     if (savedData && savedData.seed === seed) {
       if (Array.isArray(savedData.modified)) {
         for (const entry of savedData.modified) {
@@ -482,8 +482,8 @@ class Game {
   _saveWithFeedback() {
     const saved = this.saveNow();
     const message = saved
-      ? 'Spiel gespeichert!'
-      : 'Speichern fehlgeschlagen – deine Welt bleibt geöffnet.';
+      ? 'Game saved!'
+      : 'Saving failed—your world remains open.';
     if (this.state !== 'paused') this.toast(message);
     const feedback = $('save-feedback');
     if (feedback) {
@@ -503,7 +503,7 @@ class Game {
   exportSaveBackup() {
     const raw = exportSaveData();
     if (!raw) {
-      this._setSaveBackupFeedback('Kein Spielstand zum Sichern vorhanden.', true);
+      this._setSaveBackupFeedback('No saved game is available to back up.', true);
       return false;
     }
     let objectUrl = null;
@@ -513,48 +513,48 @@ class Game {
       const link = document.createElement('a');
       const stamp = new Date().toISOString().replace(/[:.]/g, '-');
       link.href = objectUrl;
-      link.download = `minecraft-klon-sicherung-${stamp}.json`;
+      link.download = `minecraft-clone-backup-${stamp}.json`;
       link.hidden = true;
       document.body.appendChild(link);
       link.click();
       link.remove?.();
       setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-      this._setSaveBackupFeedback('Sicherung heruntergeladen. Bewahre die Datei an einem sicheren Ort auf.');
+      this._setSaveBackupFeedback('Backup downloaded. Keep the file in a safe place.');
       return true;
     } catch {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
-      this._setSaveBackupFeedback('Download fehlgeschlagen. Dein Spielstand auf diesem Gerät bleibt erhalten.', true);
+      this._setSaveBackupFeedback('Download failed. The saved game on this device is unchanged.', true);
       return false;
     }
   }
 
   async importSaveBackup(file) {
     if (!file || typeof file.text !== 'function') {
-      this._setSaveBackupFeedback('Die ausgewählte Datei konnte nicht gelesen werden.', true);
+      this._setSaveBackupFeedback('The selected file could not be read.', true);
       return false;
     }
     if (hasSave() && (typeof window.confirm !== 'function'
-        || !window.confirm('Die Sicherung ersetzt den Spielstand auf diesem Gerät. Vorher ggf. herunterladen. Fortfahren?'))) {
-      this._setSaveBackupFeedback('Import abgebrochen. Der vorhandene Spielstand bleibt erhalten.');
+        || !window.confirm('This backup will replace the saved game on this device. Download the current save first if needed. Continue?'))) {
+      this._setSaveBackupFeedback('Import canceled. The existing saved game is unchanged.');
       return false;
     }
     try {
       if (Number.isFinite(file.size) && file.size > MAX_SAVE_SIZE) {
-        this._setSaveBackupFeedback('Die Sicherungsdatei ist zu groß (maximal 8 MB).', true);
+        this._setSaveBackupFeedback('The backup file is too large (maximum 8 MB).', true);
         return false;
       }
       const raw = await file.text();
       if (!importSaveData(raw)) {
-        this._setSaveBackupFeedback('Sicherung ungültig oder Speicher voll. Der bisherige Spielstand bleibt erhalten.', true);
+        this._setSaveBackupFeedback('The backup is invalid or storage is full. The previous saved game is unchanged.', true);
         return false;
       }
       this.menus.setHasSave(true);
       const warning = $('save-warning');
       if (warning) warning.hidden = true;
-      this._setSaveBackupFeedback('Sicherung importiert. Wähle „Spiel fortsetzen“, um diese Welt zu laden.');
+      this._setSaveBackupFeedback('Backup imported. Select “Continue Game” to load this world.');
       return true;
     } catch {
-      this._setSaveBackupFeedback('Datei konnte nicht gelesen werden. Der bisherige Spielstand bleibt erhalten.', true);
+      this._setSaveBackupFeedback('The file could not be read. The previous saved game is unchanged.', true);
       return false;
     }
   }
@@ -607,11 +607,11 @@ class Game {
     this.hud.setGameplayActive(true);
     this.menus.hideAll();
     if (!this.isTouch) this.input.lock();
-    this.toast('Wiederbelebt!');
+    this.toast('Respawned!');
   }
 
   // =========================================================================
-  // Vollbild & Zustandswechsel
+  // Fullscreen & state transitions
   // =========================================================================
   async toggleFullscreen() {
     const doc = document;
@@ -625,7 +625,7 @@ class Game {
         await exit.call(doc);
       } else {
         if (!request) {
-          this.toast('Vollbild wird von diesem Browser nicht unterstützt.');
+          this.toast('This browser does not support fullscreen.');
           return false;
         }
         await request.call(doc.documentElement);
@@ -633,14 +633,14 @@ class Game {
       this._syncFullscreenButton();
       return true;
     } catch {
-      this.toast('Vollbildmodus konnte nicht geändert werden.');
+      this.toast('Fullscreen mode could not be changed.');
       return false;
     }
   }
 
   _syncFullscreenButton() {
     const active = !!(document.fullscreenElement || document.webkitFullscreenElement);
-    const label = active ? 'Vollbildmodus beenden' : 'Vollbildmodus aktivieren';
+    const label = active ? 'Exit Fullscreen' : 'Enter Fullscreen';
     const button = $('btn-fullscreen');
     if (button) {
       button.setAttribute('aria-pressed', String(active));
@@ -654,10 +654,10 @@ class Game {
       const title = menuButton.querySelector && menuButton.querySelector('strong');
       const detail = menuButton.querySelector && menuButton.querySelector('small');
       if (title && title.parentElement) {
-        title.textContent = active ? 'Vollbild beenden' : 'Vollbild';
-        if (detail && detail.parentElement) detail.textContent = active ? 'Zurück zum Fenster' : 'Bildschirm füllen';
+        title.textContent = active ? 'Exit Fullscreen' : 'Fullscreen';
+        if (detail && detail.parentElement) detail.textContent = active ? 'Return to Window' : 'Fill the Screen';
       } else {
-        menuButton.textContent = active ? '⛶ Vollbildmodus beenden' : '⛶ Vollbildmodus aktivieren';
+        menuButton.textContent = active ? '⛶ Exit Fullscreen' : '⛶ Enter Fullscreen';
       }
     }
   }
@@ -734,7 +734,7 @@ class Game {
     this.state = 'playing';
     this.menus.hideAll();
     if (!this.isTouch) this.input.lock();
-    // Hotbar-Update erzwingen
+    // Force a hotbar update
     this.hud.update(0, this.player, true);
     this.hud._lastSig = null;
   }
@@ -783,12 +783,12 @@ class Game {
   async runSelfTest() {
     this.menus.showScreen('selftest-screen');
     const resultsEl = $('selftest-results');
-    if (resultsEl) resultsEl.innerHTML = '<p>Diagnose läuft…</p>';
+    if (resultsEl) resultsEl.innerHTML = '<p>Running diagnostics…</p>';
     try {
       const report = await runSelfTest(this);
       if (resultsEl) renderSelfTest(resultsEl, report);
     } catch (e) {
-      if (resultsEl) resultsEl.innerHTML = `<p>Fehler: ${e.message}</p>`;
+      if (resultsEl) resultsEl.innerHTML = `<p>Error: ${e.message}</p>`;
     }
     const back = $('btn-selftest-back');
     if (back && !back._bound) {
@@ -800,13 +800,13 @@ class Game {
   }
 
   // =========================================================================
-  // Einstellungen
+  // Settings
   // =========================================================================
   applySetting(key, value) {
     this.settings[key] = value;
     switch (key) {
       case 'renderDistance':
-        // Wird im Loop berücksichtigt
+        // Applied in the loop
         break;
       case 'fov':
         this.engine.setFov(value);
@@ -841,10 +841,10 @@ class Game {
   }
 
   // =========================================================================
-  // Tastatur
+  // Keyboard
   // =========================================================================
   _onKey(e) {
-    // Aktionen wie Flugmodus oder Spielmodus dürfen beim Gedrückthalten nicht mehrfach auslösen.
+    // Holding a key must not repeatedly trigger actions such as flight or game-mode changes.
     if (e.repeat) return;
     if (this.state === 'menu' || this.state === 'loading') return;
 
@@ -876,31 +876,31 @@ class Game {
           this.player.gamemode = this.player.gamemode === 'survival' ? 'creative' : 'survival';
           if (this.player.gamemode === 'survival') this._setFlying(false);
           this.hud.setGamemodeLabel(this.player.gamemode, this.player.peaceful);
-          this.toast(`Modus: ${this.player.gamemode}`);
+          this.toast(`Mode: ${this.player.gamemode}`);
         }
         break;
       case 'KeyP':
         if (this.state === 'playing') {
           this.player.peaceful = !this.player.peaceful;
           this.hud.setGamemodeLabel(this.player.gamemode, this.player.peaceful);
-          this.toast(this.player.peaceful ? 'Friedlich: AN' : 'Friedlich: AUS');
+          this.toast(this.player.peaceful ? 'Peaceful: ON' : 'Peaceful: OFF');
         }
         break;
       case 'KeyT':
         if (this.state === 'playing') {
-          // Zur nächsten Tageszeit springen
+          // Skip to the next time of day
           const t = this.timeOfDay;
           if (t < 0.25) this.timeOfDay = 0.25;
           else if (t < 0.5) this.timeOfDay = 0.72;
           else if (t < 0.75) this.timeOfDay = 0.75;
           else this.timeOfDay = 0.22;
-          this.toast('Zeit gesprungen');
+          this.toast('Time skipped');
         }
         break;
       case 'KeyO':
         if (this.state === 'playing') {
           this.weather = this.weather === 'clear' ? 'rain' : 'clear';
-          this.toast(this.weather === 'rain' ? 'Es regnet…' : 'Der Himmel klärt sich');
+          this.toast(this.weather === 'rain' ? 'It is raining…' : 'The sky is clearing');
         }
         break;
       case 'F5':
@@ -918,7 +918,7 @@ class Game {
         break;
       case 'Space':
         if (this.state === 'playing') {
-          // Doppelsprung → Fliegen
+          // Double jump → fly
           const now = performance.now();
           if (now - this.doubleJumpTimer < 320) this._toggleFlight();
           this.doubleJumpTimer = now;
@@ -936,20 +936,20 @@ class Game {
       this.player.velocity.y = 0;
       this.player.fallDistance = 0;
     }
-    // Der mobile Schleichen-Toggle steuert im Flug den Abstieg. Beim Wechsel des
-    // Flugmodus zurücksetzen, damit keine alte Abwärts-Eingabe den nächsten Flug blockiert.
+    // The mobile sneak toggle controls descent while flying. Reset it when flight
+    // changes so stale downward input cannot block the next flight.
     this.touch?.setSneak(false);
   }
 
   _toggleFlight() {
     if (this.state !== 'playing' || this.player.gamemode !== 'creative') return false;
     this._setFlying(!this.player.flying);
-    this.toast(this.player.flying ? 'Fliegen: AN' : 'Fliegen: AUS');
+    this.toast(this.player.flying ? 'Flying: ON' : 'Flying: OFF');
     return this.player.flying;
   }
 
   _onKeyUp(e) {
-    // Derzeit nichts
+    // Currently unused
   }
 
   _touchAction(name) {
@@ -973,7 +973,7 @@ class Game {
         this.debug.toggle();
         break;
       case 'sneak':
-        this.toast(this.touch.sneak ? 'Schleichen: AN' : 'Schleichen: AUS');
+        this.toast(this.touch.sneak ? 'Sneaking: ON' : 'Sneaking: OFF');
         break;
       default:
         break;
@@ -981,7 +981,7 @@ class Game {
   }
 
   // =========================================================================
-  // Hauptschleife
+  // Main loop
   // =========================================================================
   _loop(time) {
     requestAnimationFrame((t) => this._loop(t));
@@ -993,21 +993,21 @@ class Game {
       this.blockCracks?.hide();
     }
     if (this.state === 'menu') {
-      // Das Voxel-Diorama bewegt sich nur im Menü langsam; auf Touch-Geräten bleibt es genauso leichtgewichtig.
+      // The voxel diorama moves slowly only in the menu and remains lightweight on touch devices.
       if (this.menuPreview?.root.visible) this.menuPreview.updateCamera(this.engine.camera, time / 1000);
       this.engine.updateSky(this.timeOfDay, this.settings.renderDistance, dt, 0);
       this.engine.updateFov(false, dt);
       this.engine.render();
     } else if (this.state === 'playing' || this.state === 'inventory' || this.state === 'paused' || this.state === 'dead') {
       if (this.state === 'playing' || this.state === 'inventory') {
-        // Die Welt läuft weiter, während das Inventar offen ist; Gameplay-Inputs
-        // werden im Update neutralisiert, die Physik, Mobs und Welt-Ticks nicht.
+        // The world continues while the inventory is open; gameplay inputs are
+        // neutralized during updates, but physics, mobs, and world ticks continue.
         this._updatePlaying(dt);
       }
       if (this.state === 'playing' || this.state === 'inventory') {
         this._tickFurnaces(dt);
       }
-      // Rendering auch im Pause-Menü (Hintergrund bleibt sichtbar)
+      // Render while paused too (the background remains visible)
       this.engine.updateSky(this.timeOfDay, this.settings.renderDistance, dt, this.rainStrength);
       this.engine.updateFov(this.player.sprinting && !this.settings.reduceMotion, dt);
       this.engine.render();
@@ -1018,7 +1018,7 @@ class Game {
     const player = this.player;
     const inventoryOpen = this.state === 'inventory';
 
-    // Das Inventar sperrt Steuer- und Interaktionseingaben, aber nicht den Welttick.
+    // The inventory blocks movement and interaction input, but not world ticks.
     let moveInput;
     let lookDX = 0;
     let lookDY = 0;
@@ -1054,7 +1054,7 @@ class Game {
       }
     }
 
-    // Blick drehen
+    // Rotate the view
     const invert = this.settings.invertY ? -1 : 1;
     player.yaw -= lookDX;
     player.pitch -= lookDY * invert;
@@ -1066,7 +1066,7 @@ class Game {
     player.update(dt, moveInput);
     this.stats.distance += Math.hypot(player.position.x - oldPos.x, player.position.z - oldPos.z);
 
-    // Schritte & Landung
+    // Footsteps & landing
     const onGround = player.onGround;
     const hSpeed = Math.hypot(player.velocity.x, player.velocity.z);
     if (onGround && hSpeed > 1.2 && player.walkTime % 1 < 0.5) {
@@ -1090,14 +1090,14 @@ class Game {
     }
     if (!moveInput.jump) player._jumpSoundPlayed = false;
 
-    // Schaden-Sound + HUD-Flash
+    // Damage sound + HUD flash
     if (player.hurtTime > 0.3) {
       this.audio.hurt();
       this.hud.flashHurt();
       player.hurtTime = 0.25;
     }
 
-    // ---- Tageszeit & Wetter -----------------------------------------------
+    // ---- Time of day & weather -----------------------------------------------
     const dayLen = this.settings.dayLength;
     if (dayLen > 0) {
       this.timeOfDay = (this.timeOfDay + dt / dayLen) % 1;
@@ -1115,7 +1115,7 @@ class Game {
       this.audio.stopRain();
     }
 
-    // ---- Welt aktualisieren -------------------------------------------------
+    // ---- Update world -------------------------------------------------
     const built = this.world.update(
       player.position.x,
       player.position.z,
@@ -1123,12 +1123,12 @@ class Game {
       this.isTouch ? 5 : 8
     );
 
-    // Zufalls-Tick: Weizen wachsen lassen
+    // Random tick: grow wheat
     this._cropTick(dt);
 
     // ---- Interaktion --------------------------------------------------------
     let usePressed = !inventoryOpen && (pressed.use || false);
-    // Funktionsblöcke öffnen ihre eigene, positionsgebundene Oberfläche.
+    // Functional blocks open their own position-bound interface.
     if (usePressed) {
       const hit = this.world.raycast(player.eyePosition(), player.lookDir(), 5.2);
       if (hit?.id === BLOCK.CRAFTING_TABLE) {
@@ -1172,7 +1172,7 @@ class Game {
       : null;
     this.blockCracks.update(crackTarget, this.interaction.breakFraction);
 
-    // ---- Mobs & Partikel ----------------------------------------------------
+    // ---- Mobs & particles ----------------------------------------------------
     this.mobs.update(dt, player, this.inventory, {
       onPlayerHurt: () => {
         this.hud.flashHurt();
@@ -1191,7 +1191,7 @@ class Game {
       },
     }, this.timeOfDay);
 
-    // Mob-Töne gelegentlich
+    // Occasional mob sounds
     if (Math.random() < dt * 0.12) {
       const near = this.mobs.mobs.filter((m) => {
         const d = Math.hypot(m.position.x - player.position.x, m.position.z - player.position.z);
@@ -1207,12 +1207,12 @@ class Game {
 
     this.particles.update(dt);
 
-    // Unterwasser-Overlay
+    // Underwater overlay
     const underwater = player.headInWater;
     this.engine.underwater = underwater;
     this.hud.setUnderwater(underwater);
 
-    // Fackel-Partikel (nahe Blöcke im Blickfeld? – nah am Spieler)
+    // Torch particles on nearby blocks around the player
     if (Math.random() < dt * 2.5) {
       const px = Math.floor(player.position.x);
       const py = Math.floor(player.position.y);
@@ -1233,7 +1233,7 @@ class Game {
 
     // ---- Kamera -------------------------------------------------------------
     const eye = player.eyePosition();
-    // leichtes Kopf-Bobbing beim Gehen
+    // Subtle head bobbing while walking
     const bobAmp = !this.settings.reduceMotion && player.onGround && hSpeed > 1
       ? Math.min(0.045, hSpeed * 0.008)
       : 0;
@@ -1252,7 +1252,7 @@ class Game {
     if (this.worldStatusTimer <= 0) {
       const biomeId = this.world.gen.biomeAt(Math.floor(player.position.x), Math.floor(player.position.z));
       this.hud.setWorldStatus({
-        biome: BIOME_NAMES[biomeId] || 'Unbekanntes Gebiet',
+        biome: BIOME_NAMES[biomeId] || 'Unknown Area',
         timeOfDay: this.timeOfDay,
         weather: this.weather,
         y: player.position.y,
@@ -1278,11 +1278,11 @@ class Game {
       if (this.input.locked) this.input.unlock();
       const mins = Math.floor(this.stats.distance / 60);
       this.menus.setDeathScreen({
-        text: `Gelaufen: ${Math.floor(this.stats.distance)} Blöcke · Blöcke abgebaut: ${this.stats.blocksMined} · Mobs besiegt: ${this.stats.mobsKilled}`,
+        text: `Distance walked: ${Math.floor(this.stats.distance)} blocks · Blocks mined: ${this.stats.blocksMined} · Mobs defeated: ${this.stats.mobsKilled}`,
       });
     }
 
-    // ---- Auto-Speichern -------------------------------------------------------
+    // ---- Autosave -------------------------------------------------------------
     if (this.settings.autosave !== false) {
       this.autosaveTimer += dt;
       if (this.autosaveTimer > (this.settings.autosaveInterval || 60)) {
@@ -1292,7 +1292,7 @@ class Game {
     }
   }
 
-  /** Weizen-Wachstum (Zufalls-Tick). */
+  /** Wheat growth (random tick). */
   _cropTick(dt) {
     this._cropTimer = (this._cropTimer || 0) + dt;
     if (this._cropTimer < 8) return;
@@ -1314,7 +1314,7 @@ class Game {
   }
 
   _dropItems(id, count, stack = null) {
-    // Nicht passende Cursor-/Crafting-Reste bleiben als ItemEntity in der Welt.
+    // Leftover cursor/crafting items remain in the world as ItemEntity objects.
     if (!this.mobs) return false;
     const p = this.player.position;
     const dir = this.player.lookDir();

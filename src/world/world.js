@@ -1,4 +1,4 @@
-// world.js — Chunk-Verwaltung, Licht, Raycast, Block-Zugriff.
+// world.js — Chunk management, lighting, raycasts, and block access.
 import * as THREE from '../../lib/three.module.js';
 import { BLOCKS, BLOCK, RENDER, isOpaque, isTransparent } from './blocks.js';
 import { Chunk, CHUNK_SIZE, CHUNK_HEIGHT, CHUNK_VOLUME, blockIndex, buildChunkGeometry } from './chunk.js';
@@ -33,10 +33,10 @@ export class World {
     this.worldType = worldType;
     this.gen = new WorldGen(this.seed, worldType);
     this.chunks = new Map();
-    this.modified = new Map();     // "x,y,z" -> {id, meta} — Spieler-Änderungen
+    this.modified = new Map();     // "x,y,z" -> {id, meta} — player changes
     this.modifiedByChunk = new Map();
     this._modifiedIndexReady = false;
-    // Container-Inhalte werden separat unter "x,y,z" gespeichert.
+    // Container contents are stored separately under "x,y,z".
     this.furnaces = new Map();
     this.chests = new Map();
     this.materials = materials || {};
@@ -63,7 +63,7 @@ export class World {
     return chunk;
   }
 
-  /** Erstellt bei Bedarf einmalig einen Chunk-Index für persistierte Blockänderungen. */
+  /** Lazily create a chunk index for persisted block changes. */
   _ensureModifiedIndex() {
     if (this._modifiedIndexReady) return;
     this.modifiedByChunk.clear();
@@ -87,12 +87,12 @@ export class World {
     bucket.set(blockIndex(x - cx * CHUNK_SIZE, y, z - cz * CHUNK_SIZE), value);
   }
 
-  /** Chunk generieren (Terrain + Spieler-Änderungen anwenden). */
+  /** Generate a chunk (terrain + apply player changes). */
   generateChunk(cx, cz) {
     const chunk = this.getOrCreateChunk(cx, cz);
     if (chunk.generated) return chunk;
     this.gen.generate(chunk, this);
-    // Änderungen nur in diesem Chunk anwenden, nicht die gesamte Weltkarte scannen.
+    // Apply changes only in this chunk instead of scanning the entire world map.
     this._ensureModifiedIndex();
     const changes = this.modifiedByChunk.get(World.chunkKey(cx, cz));
     if (changes) {
@@ -106,7 +106,7 @@ export class World {
     return chunk;
   }
 
-  /** Block abfragen (Weltkoordinaten). Lädt/generiert Chunk bei Bedarf NICHT automatisch. */
+  /** Get a block (world coordinates). Does NOT automatically load/generate chunks. */
   getBlock(x, y, z) {
     if (y < 0 || y >= CHUNK_HEIGHT) return BLOCK.AIR;
     const cx = Math.floor(x / CHUNK_SIZE);
@@ -116,7 +116,7 @@ export class World {
     return chunk.blocks[blockIndex(x - cx * CHUNK_SIZE, y, z - cz * CHUNK_SIZE)];
   }
 
-  /** Block abfragen ohne Seiteneffekte (für Generierung). */
+  /** Get a block without side effects (for generation). */
   getBlockQuiet(x, y, z) {
     return this.getBlock(x, y, z);
   }
@@ -149,7 +149,7 @@ export class World {
     return chunk.blockLight[blockIndex(x - cx * CHUNK_SIZE, y, z - cz * CHUNK_SIZE)];
   }
 
-  /** Block setzen und Chunk-Markierungen/Änderungen verwalten. */
+  /** Set a block and manage chunk flags/changes. */
   setBlock(x, y, z, id, meta = 0, record = true) {
     if (y < 0 || y >= CHUNK_HEIGHT) return false;
     const cx = Math.floor(x / CHUNK_SIZE);
@@ -170,10 +170,10 @@ export class World {
       if (this._modifiedIndexReady) this._indexModifiedEntry(pos, value);
     }
 
-    // Licht sofort neu berechnen (BFS über den Chunk ist günstig)
+    // Recalculate lighting immediately (BFS across the chunk is inexpensive)
     this.recomputeLight(chunk);
 
-    // Nachbarchunks an Grenzen neu einordnen
+    // Mark neighboring chunks at boundaries
     const touch = [];
     if (lx === 0) touch.push([cx - 1, cz]);
     if (lx === CHUNK_SIZE - 1) touch.push([cx + 1, cz]);
@@ -186,13 +186,13 @@ export class World {
     return true;
   }
 
-  /** Licht eines Chunks neu berechnen (Himmelslicht + Blocklicht, BFS). */
+  /** Recalculate a chunk's lighting (skylight + block light, BFS). */
   recomputeLight(chunk) {
     const { blocks, skyLight, blockLight } = chunk;
     skyLight.fill(0);
     blockLight.fill(0);
 
-    // Himmelslicht: von oben durchlässig durchfallen lassen
+    // Skylight: let it pass downward through transparent blocks
     for (let z = 0; z < CHUNK_SIZE; z++) {
       for (let x = 0; x < CHUNK_SIZE; x++) {
         let light = 15;
@@ -208,10 +208,10 @@ export class World {
       }
     }
 
-    // BFS-Verbreitung Himmelslicht
+    // BFS skylight propagation
     this._spreadLight(chunk, skyLight, 15, true);
 
-    // Blocklicht von Lichtquellen
+    // Block light from light sources
     for (let y = 0; y < CHUNK_HEIGHT; y++) {
       for (let z = 0; z < CHUNK_SIZE; z++) {
         for (let x = 0; x < CHUNK_SIZE; x++) {
@@ -228,7 +228,7 @@ export class World {
   }
 
   _spreadLight(chunk, lightArray, _initial, isSky) {
-    // Flache, wiederverwendbare Queue statt tausender temporärer Nachbar-Arrays.
+    // Flat, reusable queue instead of thousands of temporary neighbor arrays.
     let queue = this._lightQueue;
     let head = 0;
     let tail = 0;
@@ -278,7 +278,7 @@ export class World {
     }
     this._lightQueue = queue;
 
-    // Licht an den Chunk-Rändern aus Nachbarn übernehmen (approximiert).
+    // Copy light at chunk edges from neighbors (approximate).
     const baseX = chunk.cx * CHUNK_SIZE;
     const baseZ = chunk.cz * CHUNK_SIZE;
     const includeNeighbor = (worldX, worldZ, y, best) => {
@@ -317,15 +317,15 @@ export class World {
   }
 
   /**
-   * Chunks um eine Position laden/entladen, Meshes vorbereiten.
-   * @returns {number} Anzahl der neu gebauten Meshes
+   * Load/unload chunks around a position and prepare meshes.
+   * @returns {number} number of newly built meshes
    */
   update(playerX, playerZ, renderDistance, maxBuildMs = 6, maxGenerate = 3) {
     const pcx = Math.floor(playerX / CHUNK_SIZE);
     const pcz = Math.floor(playerZ / CHUNK_SIZE);
     const radius = Math.max(0, Math.min(32, Math.floor(Number(renderDistance) || 0)));
 
-    // Chunk unter dem Spieler IMMER zuerst (kein Durchfallen!)
+    // ALWAYS build the chunk below the player first (prevent falling through!)
     let generated = 0;
     const center = this.getChunk(pcx, pcz);
     if (!center || !center.generated) {
@@ -337,8 +337,8 @@ export class World {
       }
     }
 
-    // Weitere fehlende Chunks von nah nach fern generieren, damit der sichtbare
-    // Spielbereich vor entfernten Rand-Chunks gefüllt wird.
+    // Generate other missing chunks from near to far so the visible play area
+    // fills before distant edge chunks.
     for (const [dx, dz] of chunkOffsets(radius)) {
       if (generated >= maxGenerate) break;
       const cx = pcx + dx;
@@ -349,7 +349,7 @@ export class World {
         generated++;
         const c = this.getChunk(cx, cz);
         c.dirty = true;
-        // Nachbarn markieren (Ränder)
+        // Mark neighbors (edges)
         for (const [ncx, ncz] of [[cx + 1, cz], [cx - 1, cz], [cx, cz + 1], [cx, cz - 1]]) {
           const n = this.getChunk(ncx, ncz);
           if (n && n.generated) n.dirty = true;
@@ -357,7 +357,7 @@ export class World {
       }
     }
 
-    // Entfernte Chunks entladen
+    // Unload distant chunks
     for (const [key, chunk] of this.chunks) {
       const dx = chunk.cx - pcx;
       const dz = chunk.cz - pcz;
@@ -367,7 +367,7 @@ export class World {
       }
     }
 
-    // Meshes mit Zeitbudget bauen
+    // Build meshes within a time budget
     const startTime = (typeof performance !== 'undefined' ? performance.now() : Date.now());
     let built = 0;
     for (const chunk of this.chunks.values()) {
@@ -381,7 +381,7 @@ export class World {
     return built;
   }
 
-  /** Mesh eines Chunks erzeugen und in die Szene legen. */
+  /** Build a chunk mesh and add it to the scene. */
   buildChunkMesh(chunk) {
     const { solid, transparent, fluidWater, fluidLava } = buildChunkGeometry(this, chunk);
     this._clearChunkMeshes(chunk);
@@ -479,17 +479,17 @@ export class World {
     return null;
   }
 
-  /** Oberflächenhöhe (für Spawn/Mobs). */
+  /** Surface height (for spawning/mobs). */
   heightAt(x, z) {
     return this.gen.heightAt(Math.floor(x), Math.floor(z));
   }
 
-  /** Ist der Block an Position für Mobs begehbar-frei (2 Blöcke Luft)? */
+  /** Is the position walkable for mobs (2 blocks of air)? */
   isSpaceFree(x, y, z) {
     return this.getBlock(x, y, z) === BLOCK.AIR && this.getBlock(x, y + 1, z) === BLOCK.AIR;
   }
 
-  /** Alle Chunks-Statistiken (Debug). */
+  /** Aggregate chunk statistics (debug). */
   stats() {
     let generated = 0;
     let dirty = 0;
@@ -502,7 +502,7 @@ export class World {
     return { chunks: this.chunks.size, generated, dirty, solidVerts, modified: this.modified.size };
   }
 
-  /** Alle Meshes neu aufbauen (nach Einstellungsänderung). */
+  /** Rebuild all meshes (after a settings change). */
   rebuildAll() {
     for (const chunk of this.chunks.values()) {
       if (chunk.generated) {

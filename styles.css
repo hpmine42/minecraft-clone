@@ -1,4 +1,4 @@
-/* styles.css — Minecraft-Klon: HUD, Menüs, Touch-Steuerung (Desktop & Handy) */
+/* styles.css — Minecraft Clone: HUD, menus, and touch controls (desktop & mobile) */
 
 * {
   margin: 0;
@@ -123,7 +123,7 @@ html, body {
   transition: width 0.06s linear;
 }
 
-/* Lebens-/Hungerleisten */
+/* Health/hunger bars */
 #stats-bars {
   position: absolute;
   left: 50%;
@@ -189,7 +189,7 @@ html, body {
 /* Hotbar */
 #hotbar-wrap {
   position: absolute;
-  z-index: 4; /* Hotbar-Taps bleiben über der großen Joystick-Zone erreichbar. */
+  z-index: 4; /* Keep hotbar taps accessible above the large joystick zone. */
   left: 50%;
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
@@ -379,7 +379,7 @@ html, body {
   100% { opacity: 0; }
 }
 
-/* =========================== Touch-Steuerung =========================== */
+/* =========================== Touch controls =========================== */
 #mobile-controls {
   position: absolute;
   inset: 0;
@@ -681,7 +681,7 @@ html, body {
   line-height: 1.5;
 }
 
-/* Neues, responsives Hauptmenü */
+/* New responsive main menu */
 #main-menu .main-panel {
   position: relative;
   z-index: 1;
@@ -1012,7 +1012,7 @@ html, body {
   height: 30px;
 }
 
-/* Inventar */
+/* Inventory */
 #inventory-screen .inv-panel {
   width: min(96vw, 960px);
   max-height: min(92vh, calc(100dvh - 28px));
@@ -1368,7 +1368,7 @@ html, body {
   color: #fff;
 }
 
-/* Tod */
+/* Death */
 .death-panel {
   text-align: center;
 }
@@ -1384,7 +1384,7 @@ html, body {
   font-size: 14px;
 }
 
-/* Laden */
+/* Loading */
 .loading-bar {
   height: 8px;
   border-radius: 4px;
@@ -1405,7 +1405,7 @@ html, body {
   100% { transform: translateX(320%); }
 }
 
-/* Hilfe */
+/* Help */
 #help-content {
   color: #c8d8e8;
   font-size: 14px;
@@ -1422,7 +1422,7 @@ html, body {
 }
 #help-content b { color: #fff; }
 
-/* Selbstdiagnose */
+/* Self-diagnostics */
 .selftest-table {
   width: 100%;
   border-collapse: collapse;
@@ -1443,7 +1443,7 @@ html, body {
   line-height: 1.5;
 }
 
-/* ====================== Responsive Anpassungen ====================== */
+/* ====================== Responsive adjustments ====================== */
 @media (max-width: 640px) {
   .hotbar-slot {
     width: min(10vw, 44px);
@@ -1642,7 +1642,7 @@ html, body {
 }
 
 @media (max-height: 480px) {
-  /* Querformat: Statusleiste über der Hotbar, Steuerknöpfe in klar getrennten Zonen. */
+  /* Landscape: status bar above the hotbar, controls in clearly separated zones. */
   #stats-bars {
     bottom: calc(94px + env(safe-area-inset-bottom, 0px));
     width: min(58vw, 420px);
@@ -1702,7 +1702,7 @@ html, body {
   }
 }
 
-/* Pfeiltasten-Buttons größer auf Touch */
+/* Larger arrow buttons on touch devices */
 @media (pointer: coarse) {
   .touch-btn {
     min-width: 60px;
@@ -1716,7 +1716,7 @@ html, body {
 }
 
 @media (max-width: 640px) and (max-height: 480px) {
-  /* Schmale Querformate: eine flache Button-Reihe, keine Kollision mit HUD-Text. */
+  /* Narrow landscape: one shallow button row with no HUD text collisions. */
   #menu-buttons { display: flex; }
   #fps { display: none; }
   #debug {
@@ -1748,7 +1748,7 @@ html, body {
   }
 }
 
-/* Hauptmenü auf Hochformat-Handys: eine Spalte, natürliche Seite zum Scrollen. */
+/* Main menu on portrait phones: one column and natural page scrolling. */
 @media (max-width: 760px) {
   #main-menu.screen {
     align-items: flex-start;
@@ -1796,7 +1796,7 @@ html, body {
   .utility-button strong { font-size: 10px; }
 }
 
-/* Querformat mit wenig Höhe: kompakte Karte und kurze Formularabstände. */
+/* Landscape with limited height: compact card and tighter form spacing. */
 @media (max-height: 560px) and (min-width: 761px) {
   #main-menu.screen { padding: 8px; }
   #main-menu .main-panel {
@@ -1824,7 +1824,7 @@ html, body {
 }
 
 @media (pointer: coarse) {
-  /* Vermeidet teure Backdrop-Filter auf mobilen GPUs; die Fläche bleibt deckend lesbar. */
+  /* Avoid costly backdrop filters on mobile GPUs; keep the surface opaque and readable. */
   #main-menu .main-panel { backdrop-filter: none; }
 }
 
@@ -1839,8 +1839,8 @@ html, body {
   #main-menu .utility-button { transition: none; }
 }
 
-/* ======================= Minecraft-inspirierte Menüs ======================
-   Klare Steinkarten, harte Pixelkanten und helle Textfarben statt Glas/Blur. */
+/* ======================= Minecraft-inspired menus ========================
+   Crisp stone cards, hard pixel edges, and light text instead of glass/blur. */
 :root {
   --mc-ink: #171812;
   --mc-panel: #383a32;
@@ -1955,7 +1955,7 @@ html, body {
   color: #fff8df;
 }
 
-/* Hauptmenü: helle Schrift, quadratische Stein-/Holzflächen und blockige Aktionen. */
+/* Main menu: light text, square stone/wood surfaces, and blocky actions. */
 #main-menu {
   background:
     linear-gradient(180deg, rgba(9, 17, 11, 0.2), rgba(10, 15, 10, 0.64)),
@@ -2161,7 +2161,7 @@ html, body {
 }
 #main-menu .hint span { color: #ffe17a; }
 
-/* Settings: feste Beschriftungs-/Wertzeilen, gruppierte Optionen und gut sichtbare Slider. */
+/* Settings: fixed label/value rows, grouped options, and clearly visible sliders. */
 #settings-screen.screen {
   background: rgba(7, 9, 7, 0.84);
   backdrop-filter: blur(2px);
@@ -2448,7 +2448,7 @@ html, body {
   font-size: 11px;
 }
 
-/* Alte Menübildschirme verwenden dieselben hellen, kantigen Oberflächen. */
+/* Legacy menu screens use the same light, angular surfaces. */
 #pause-menu .menu-panel h2,
 #help-screen .menu-panel h2,
 #selftest-screen .menu-panel h2,
